@@ -23,6 +23,7 @@ export const TokenType = {
     GREATER_EQUAL: "GREATER_EQUAL",
     LESS: "LESS",
     LESS_EQUAL: "LESS_EQUAL",
+    
 
     //Special
     EOF: "EOF",

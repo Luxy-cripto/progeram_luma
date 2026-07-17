@@ -24,6 +24,10 @@ for (const statement of statements) {
     console.log(statement);
 }
 
+for (const token of tokens) {
+    console.log(token);
+}
+
 // Interpreter
 const interpreter = new Interpreter();
 interpreter.interpret(statements);

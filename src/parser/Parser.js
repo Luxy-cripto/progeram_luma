@@ -127,16 +127,62 @@ export class Parser {
     // EXPRESSIONS
     // =========================
 
-    expression() {
-        return this.addition();
-    }
-
     addition() {
         let expr = this.multiplication();
 
         while (this.match(TokenType.PLUS, TokenType.MINUS)) {
             const operator = this.previous();
             const right = this.multiplication();
+
+            expr = new BinaryExpression(
+                expr,
+                operator.type,
+                right
+            );
+        }
+
+        return expr;
+    }
+    
+    expression() {
+    return this.equality();
+}
+
+    equality() {
+        let expr = this.comparison();
+
+        while (
+            this.match(
+                TokenType.BANG_EQUAL,
+                TokenType.EQUAL_EQUAL
+            )
+        ) {
+            const operator = this.previous();
+            const right = this.comparison();
+
+            expr = new BinaryExpression(
+                expr,
+                operator.type,
+                right
+            );
+        }
+
+        return expr;
+    }
+        
+    comparison(){
+        let expr = this.addition();
+
+        while (
+            this.match(
+                TokenType.GREATER,
+                TokenType.GREATER_EQUAL,
+                TokenType.LESS,
+                TokenType.LESS_EQUAL
+            )
+        ) {
+            const operator = this.previous();
+            const right = this.addition();
 
             expr = new BinaryExpression(
                 expr,

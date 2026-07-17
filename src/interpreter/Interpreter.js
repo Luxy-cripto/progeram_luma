@@ -78,6 +78,24 @@ export class Interpreter {
                 case "SLASH":
                     return left / right;
 
+                case "EQUAL_EQUAL":
+                    return left == right;
+
+                case "BANG_EQUAL":
+                    return left != right;
+
+                case "GREATER":
+                    return left > right;
+
+                case "GREATER_EQUAL":
+                    return left >= right;
+
+                case "LESS":
+                    return left < right;
+
+                case "LESS_EQUAL":
+                    return left <= right;
+
                 default:
                     throw new Error("Unknown operator.");
             }

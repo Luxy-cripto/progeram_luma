@@ -92,6 +92,7 @@ export class Lexer {
             return false;
         }
         this.current++;
+        this.column++;
         return true;
     }
 
@@ -118,9 +119,6 @@ export class Lexer {
             case '"':
                 this.string();
                 break;
-            case '=':
-                this.addToken(TokenType.EQUAL);
-                break;
             case ' ':
             case '\r':
             case '\t':
@@ -146,7 +144,33 @@ export class Lexer {
             case ")":
                 this.addToken(TokenType.RIGHT_PAREN);
                 break;
-
+            case "=":
+            if (this.match('=')){
+                this.addToken(TokenType.EQUAL_EQUAL);
+            } else {
+                this.addToken(TokenType.EQUAL);
+            }
+            break;
+            case "!":
+            if (this.match('=')){
+                this.addToken(TokenType.BANG_EQUAL);
+            }
+            break;
+            case ">":
+            if (this.match('=')){
+                this.addToken(TokenType.GREATER_EQUAL);
+            } else {
+                this.addToken(TokenType.GREATER);
+            }
+            break;
+            case "<":
+            if (this.match('=')){
+                this.addToken(TokenType.LESS_EQUAL);
+            } else {
+                this.addToken(TokenType.LESS);
+            }
+            break;
+              
             default:
             throw new Error(`Unexpected character: ${char}`)
         }
