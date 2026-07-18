@@ -1,17 +1,43 @@
 export class Environment {
-    constructor() {
-        this.variables = new Map();
+
+    constructor(parent = null) {
+        this.parent = parent;
+        this.values = {};
     }
 
     define(name, value) {
-        this.variables.set(name, value);
+        this.values[name] = value;
     }
 
     get(name) {
-        if (this.variables.has(name)) {
-            return this.variables.get(name);
-        } else {
-            throw new Error(`Undefined variable '${name}'`);
+
+        if (name in this.values) {
+            return this.values[name];
         }
+
+        if (this.parent) {
+            return this.parent.get(name);
+        }
+
+        throw new Error(
+            `Variable '${name}' not defined.`
+        );
+    }
+
+    assign(name, value) {
+
+        if (name in this.values) {
+            this.values[name] = value;
+            return;
+        }
+
+        if (this.parent) {
+            this.parent.assign(name, value);
+            return;
+        }
+
+        throw new Error(
+            `Variable '${name}' not defined.`
+        );
     }
 }

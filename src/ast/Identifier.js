@@ -1,5 +1,5 @@
 export class Identifier {
-  constructor(name) {
-    this.name = name;
-  }
+    constructor(name) {
+        this.name = name;
+    }
 }

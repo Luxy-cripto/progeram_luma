@@ -2,6 +2,9 @@ export const TokenType = {
     // Single-character tokens.
     LET: "LET",
     SAY: "SAY",
+    IF: "IF",
+    ELSE: "ELSE",
+    WHILE: "WHILE",
 
     // Literals.
     IDENTIFIER: "IDENTIFIER",
@@ -13,6 +16,10 @@ export const TokenType = {
     SLASH: "SLASH",
     LEFT_PAREN: "LEFT_PAREN",
     RIGHT_PAREN: "RIGHT_PAREN",
+    TRUE: "TRUE",
+    FALSE: "FALSE",
+    LEFT_BRACE: "LEFT_BRACE",
+    RIGHT_BRACE: "RIGHT_BRACE",
 
     // SYMBOLS
     EQUAL: "EQUAL",
@@ -27,4 +34,5 @@ export const TokenType = {
 
     //Special
     EOF: "EOF",
+
 };

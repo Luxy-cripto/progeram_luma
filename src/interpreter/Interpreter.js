@@ -4,65 +4,178 @@ import { BinaryExpression } from "../ast/BinaryExpression.js";
 import { VariableDeclaration } from "../ast/VariableDeclaration.js";
 import { SayStatement } from "../ast/SayStatement.js";
 import { UnaryExpression } from "../ast/UnaryExpression.js";
+import { IfStatement } from "../ast/IfStatement.js";
+import { BlockStatement } from "../ast/BlockStatement.js";
+import { WhileStatement } from "../ast/WhileStatement.js";
+import { ExpressionStatement } from "../ast/ExpressionStatement.js";
+import { Assignment } from "../ast/Assignment.js";
+import { Environment } from "./Environment.js";
 
 export class Interpreter {
 
     constructor() {
-        this.variables = {};
+        this.environment = new Environment();
     }
 
     interpret(statements) {
+
         for (const statement of statements) {
             this.execute(statement);
         }
+
     }
 
     execute(statement) {
 
-        console.log(statement);
-        console.log(statement.constructor.name);
-
         if (statement instanceof VariableDeclaration) {
-            const value = this.evaluate(statement.initializer);
-            this.variables[statement.identifier] = value;
+
+            const value =
+                this.evaluate(statement.initializer);
+
+            this.environment.define(
+                statement.identifier,
+                value
+            );
+
             return;
         }
 
         if (statement instanceof SayStatement) {
-            const value = this.evaluate(statement.expression);
+
+            const value =
+                this.evaluate(statement.expression);
+
             console.log(value);
+
             return;
         }
 
-        throw new Error("Unknown statement.");
-    }
-    evaluate(expr) {
-        if (expr instanceof UnaryExpression) {
-            const right = this.evaluate(expr.right);
-            switch (expr.operator) {
-                case "MINUS":
-                    return -right;
-                default:
-                    throw new Error("Unknown operator.");
-            }
+        if (statement instanceof ExpressionStatement) {
+
+            this.evaluate(
+                statement.expression
+            );
+
+            return;
         }
+
+        if (statement instanceof IfStatement) {
+
+            const condition =
+                this.evaluate(statement.condition);
+
+            if (condition) {
+
+                this.execute(
+                    statement.thenBranch
+                );
+
+            } else if (statement.elseBranch) {
+
+                this.execute(
+                    statement.elseBranch
+                );
+
+            }
+
+            return;
+        }
+
+        if (statement instanceof WhileStatement) {
+
+            while (
+                this.evaluate(
+                    statement.condition
+                )
+            ) {
+
+                this.execute(
+                    statement.body
+                );
+
+            }
+
+            return;
+        }
+
+        if (statement instanceof BlockStatement) {
+
+            const previous =
+                this.environment;
+
+            this.environment =
+                new Environment(previous);
+
+            try {
+
+                for (const stmt of statement.statements) {
+                    this.execute(stmt);
+                }
+
+            } finally {
+
+                this.environment =
+                    previous;
+            }
+
+            return;
+        }
+
+        throw new Error(
+            "Unknown statement."
+        );
+    }
+
+    evaluate(expr) {
+
         if (expr instanceof Literal) {
             return expr.value;
         }
 
         if (expr instanceof Identifier) {
 
-            if (!(expr.name in this.variables)) {
-                throw new Error(`Variable '${expr.name}' not defined.`);
-            }
+            return this.environment.get(
+                expr.name
+            );
+        }
 
-            return this.variables[expr.name];
+        if (expr instanceof Assignment) {
+
+            const value =
+                this.evaluate(expr.value);
+
+            this.environment.assign(
+                expr.name,
+                value
+            );
+
+            return value;
+        }
+
+        if (expr instanceof UnaryExpression) {
+
+            const right =
+                this.evaluate(expr.right);
+
+            switch (expr.operator) {
+
+                case "MINUS":
+                    return -right;
+
+                default:
+                    throw new Error(
+                        "Unknown operator."
+                    );
+            }
         }
 
         if (expr instanceof BinaryExpression) {
 
-            const left = this.evaluate(expr.left);
-            const right = this.evaluate(expr.right);
+            const left =
+                this.evaluate(expr.left);
+
+            const right =
+                this.evaluate(expr.right);
 
             switch (expr.operator) {
 
@@ -97,10 +210,14 @@ export class Interpreter {
                     return left <= right;
 
                 default:
-                    throw new Error("Unknown operator.");
+                    throw new Error(
+                        "Unknown operator."
+                    );
             }
         }
 
-        throw new Error("Unknown expression.");
+        throw new Error(
+            "Unknown expression."
+        );
     }
 }

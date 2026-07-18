@@ -1,6 +1,9 @@
-say 10 == 10
-say 10 != 5
-say 10 > 5
-say 10 < 5
-say 10 >= 10
-say 10 <= 10
+let x = 1
+
+while x < 5 {
+
+    say x
+
+    x = x + 1
+
+}

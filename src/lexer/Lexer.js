@@ -5,7 +5,15 @@ import { Token } from "../token/Token.js";
 const KEYWORDS = {
     say: TokenType.SAY,
     let: TokenType.LET,
+
+    true: TokenType.TRUE,
+    false: TokenType.FALSE,
+
+    if: TokenType.IF,
+    else: TokenType.ELSE,
+    while: TokenType.WHILE
 };
+
 export class Lexer {
 
     constructor(source) {
@@ -170,6 +178,12 @@ export class Lexer {
                 this.addToken(TokenType.LESS);
             }
             break;
+            case "{":
+                this.addToken(TokenType.LEFT_BRACE);
+                break;
+            case "}":
+                this.addToken(TokenType.RIGHT_BRACE);
+                break;
               
             default:
             throw new Error(`Unexpected character: ${char}`)
@@ -186,4 +200,6 @@ export class Lexer {
 
         return this.tokens;
     }
+
+
 }

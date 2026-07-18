@@ -5,6 +5,11 @@ import { Literal } from "../ast/Literal.js";
 import { Identifier } from "../ast/Identifier.js";
 import { BinaryExpression } from "../ast/BinaryExpression.js";
 import { UnaryExpression } from "../ast/UnaryExpression.js";
+import { BlockStatement } from "../ast/BlockStatement.js";
+import { IfStatement } from "../ast/IfStatement.js";
+import { WhileStatement } from "../ast/WhileStatement.js";
+import { Assignment } from "../ast/Assignment.js";
+import { ExpressionStatement } from "../ast/ExpressionStatement.js";
 
 export class Parser {
     constructor(tokens) {
@@ -54,6 +59,20 @@ export class Parser {
         throw new Error(message);
     }
 
+    whileStatement() {
+
+        const condition =
+            this.expression();
+
+        const body =
+            this.block();
+
+        return new WhileStatement(
+            condition,
+            body
+        );
+    }
+
     unary(){
         if (this.match(TokenType.MINUS)) {
             const operator = this.previous();
@@ -83,6 +102,7 @@ export class Parser {
     }
 
     statement() {
+
         if (this.match(TokenType.LET)) {
             return this.variableDeclaration();
         }
@@ -91,7 +111,65 @@ export class Parser {
             return this.sayStatement();
         }
 
-        throw new Error(`Unexpected token ${this.peek().type}`);
+        if (this.match(TokenType.IF)) {
+            return this.ifStatement();
+        }
+
+        if (this.match(TokenType.WHILE)) {
+            return this.whileStatement();
+        }
+
+        return new ExpressionStatement(
+            this.expression()
+        );
+    }
+
+    ifStatement() {
+
+        const condition = this.expression();
+
+        const thenBranch = this.block();
+
+        let elseBranch = null;
+
+        if (this.match(TokenType.ELSE)) {
+
+            if (this.match(TokenType.IF)) {
+
+                elseBranch = this.ifStatement();
+
+            } else {
+
+                elseBranch = this.block();
+
+            }
+        }
+
+        return new IfStatement(
+            condition,
+            thenBranch,
+            elseBranch
+        );
+    }
+
+    block(){
+        this.consume(
+            TokenType.LEFT_BRACE,
+            "Expected '{'."
+        );
+
+        const statements = [];
+
+        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
+            statements.push(this.statement());
+        }
+
+        this.consume(
+            TokenType.RIGHT_BRACE,
+            "Expected '}'."
+        );
+
+        return new BlockStatement(statements);
     }
 
     // =========================
@@ -145,8 +223,33 @@ export class Parser {
     }
     
     expression() {
-    return this.equality();
-}
+        return this.assignment();
+    }
+    
+    assignment() {
+
+        const expr = this.equality();
+
+        if (this.match(TokenType.EQUAL)) {
+
+            const value =
+                this.assignment();
+
+            if (expr instanceof Identifier) {
+
+                return new Assignment(
+                    expr.name,
+                    value
+                );
+            }
+
+            throw new Error(
+                "Invalid assignment target."
+            );
+        }
+
+        return expr;
+    }
 
     equality() {
         let expr = this.comparison();
@@ -216,6 +319,14 @@ export class Parser {
 
     primary() {
 
+        if (this.match(TokenType.TRUE)) {
+            return new Literal(true);
+        }
+
+        if (this.match(TokenType.FALSE)) {
+            return new Literal(false);
+        }
+
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Literal(this.previous().value);
         }
@@ -236,6 +347,8 @@ export class Parser {
             return expr;
         }
 
-        throw new Error("Expected expression.");
+        throw new Error(
+            "Expected expression."
+        );
     }
 }
