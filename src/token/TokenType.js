@@ -5,6 +5,9 @@ export const TokenType = {
     IF: "IF",
     ELSE: "ELSE",
     WHILE: "WHILE",
+    FUN: "FUN",
+    RETURN: "RETURN",
+    COMMA: "COMMA",
 
     // Literals.
     IDENTIFIER: "IDENTIFIER",
@@ -20,6 +23,7 @@ export const TokenType = {
     FALSE: "FALSE",
     LEFT_BRACE: "LEFT_BRACE",
     RIGHT_BRACE: "RIGHT_BRACE",
+    COMMA: "COMMA",
 
     // SYMBOLS
     EQUAL: "EQUAL",

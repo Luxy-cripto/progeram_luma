@@ -10,6 +10,9 @@ import { WhileStatement } from "../ast/WhileStatement.js";
 import { ExpressionStatement } from "../ast/ExpressionStatement.js";
 import { Assignment } from "../ast/Assignment.js";
 import { Environment } from "./Environment.js";
+import { FunctionDeclaration } from "../ast/FunctionDeclaration.js";
+import { CallExpression } from "../ast/CallExpression.js";
+import { LumaFunction } from "./LumaFunction.js";
 
 export class Interpreter {
 
@@ -35,6 +38,32 @@ export class Interpreter {
             this.environment.define(
                 statement.identifier,
                 value
+            );
+
+            return;
+        }
+
+        if (statement instanceof FunctionDeclaration) {
+
+            const func =
+                new LumaFunction(statement);
+
+            this.environment.define(
+                statement.name,
+                func
+            );
+
+            return;
+        }
+
+        if (statement instanceof FunctionDeclaration) {
+
+            const func =
+                new LumaFunction(statement);
+
+            this.environment.define(
+                statement.name,
+                func
             );
 
             return;
@@ -91,7 +120,18 @@ export class Interpreter {
 
                 this.execute(
                     statement.body
-                );
+                );        if (statement instanceof FunctionDeclaration) {
+
+            const func =
+                new LumaFunction(statement);
+
+            this.environment.define(
+                statement.name,
+                func
+            );
+
+            return;
+        }
 
             }
 
@@ -126,6 +166,43 @@ export class Interpreter {
         );
     }
 
+    call(interpreter, args) {
+
+        const environment =
+            new Environment(
+                interpreter.environment
+            );
+
+        for (
+            let i = 0;
+            i < this.declaration.params.length;
+            i++
+        ) {
+            environment.define(
+                this.declaration.params[i],
+                args[i]
+            );
+        }
+
+        const previous =
+            interpreter.environment;
+
+        interpreter.environment =
+            environment;
+
+        try {
+
+            interpreter.execute(
+                this.declaration.body
+            );
+
+        } finally {
+
+            interpreter.environment =
+                previous;
+        }
+    }
+
     evaluate(expr) {
 
         if (expr instanceof Literal) {
@@ -136,6 +213,24 @@ export class Interpreter {
 
             return this.environment.get(
                 expr.name
+            );
+        }
+
+        if (expr instanceof CallExpression) {
+
+            const callee =
+                this.evaluate(expr.callee);
+
+            console.log("CALLEE =", callee);
+
+            const args =
+                expr.args.map(arg =>
+                    this.evaluate(arg)
+                );
+
+            return callee.call(
+                this,
+                args
             );
         }
 

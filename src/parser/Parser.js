@@ -10,6 +10,8 @@ import { IfStatement } from "../ast/IfStatement.js";
 import { WhileStatement } from "../ast/WhileStatement.js";
 import { Assignment } from "../ast/Assignment.js";
 import { ExpressionStatement } from "../ast/ExpressionStatement.js";
+import { FunctionDeclaration } from "../ast/FunctionDeclaration.js";
+import { CallExpression } from "../ast/CallExpression.js";
 
 export class Parser {
     constructor(tokens) {
@@ -73,10 +75,15 @@ export class Parser {
         );
     }
 
-    unary(){
-        if (this.match(TokenType.MINUS)) {
-            const operator = this.previous();
-            const right = this.unary();
+    unary() {
+
+    if (this.match(TokenType.MINUS)) {
+
+            const operator =
+                this.previous();
+
+            const right =
+                this.unary();
 
             return new UnaryExpression(
                 operator.type,
@@ -84,7 +91,93 @@ export class Parser {
             );
         }
 
-        return this.primary();
+        return this.call();
+    }
+
+
+    functionDeclaration() {
+
+        const name = this.consume(
+            TokenType.IDENTIFIER,
+            "Expected function name."
+        );
+
+        this.consume(
+            TokenType.LEFT_PAREN,
+            "Expected '(' after function name."
+        );
+
+        const params = [];
+
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+
+            do {
+
+                params.push(
+                    this.consume(
+                        TokenType.IDENTIFIER,
+                        "Expected parameter name."
+                    ).value
+                );
+
+            } while (this.match(TokenType.COMMA));
+
+        }
+
+        this.consume(
+            TokenType.RIGHT_PAREN,
+            "Expected ')'."
+        );
+
+        const body = this.block();
+
+        return new FunctionDeclaration(
+            name.value,
+            params,
+            body
+        );
+    }
+
+    call() {
+
+        let expr = this.primary();
+
+        while (true) {
+
+            if (this.match(TokenType.LEFT_PAREN)) {
+
+                const args = [];
+
+                if (!this.check(TokenType.RIGHT_PAREN)) {
+
+                    do {
+
+                        args.push(
+                            this.expression()
+                        );
+
+                    } while (
+                        this.match(TokenType.COMMA)
+                    );
+
+                }
+
+                this.consume(
+                    TokenType.RIGHT_PAREN,
+                    "Expected ')'."
+                );
+
+                expr = new CallExpression(
+                    expr,
+                    args
+                );
+
+            } else {
+                break;
+            }
+        }
+
+        return expr;
     }
 
     // =========================
@@ -105,6 +198,10 @@ export class Parser {
 
         if (this.match(TokenType.LET)) {
             return this.variableDeclaration();
+        }
+
+        if (this.match(TokenType.FUN)) {
+            return this.functionDeclaration();
         }
 
         if (this.match(TokenType.SAY)) {
@@ -330,6 +427,7 @@ export class Parser {
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Literal(this.previous().value);
         }
+        
 
         if (this.match(TokenType.IDENTIFIER)) {
             return new Identifier(this.previous().value);

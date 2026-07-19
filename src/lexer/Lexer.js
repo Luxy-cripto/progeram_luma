@@ -11,7 +11,10 @@ const KEYWORDS = {
 
     if: TokenType.IF,
     else: TokenType.ELSE,
-    while: TokenType.WHILE
+    while: TokenType.WHILE,
+
+    fun: TokenType.FUN,
+    return: TokenType.RETURN
 };
 
 export class Lexer {
@@ -151,6 +154,9 @@ export class Lexer {
                 break;
             case ")":
                 this.addToken(TokenType.RIGHT_PAREN);
+                break;
+            case ",":
+                this.addToken(TokenType.COMMA);
                 break;
             case "=":
             if (this.match('=')){

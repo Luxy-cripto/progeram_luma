@@ -1,9 +1,5 @@
-let x = 1
-
-while x < 5 {
-
-    say x
-
-    x = x + 1
-
+fun add(a, b) {
+    say a + b
 }
+
+add(10, 20)
