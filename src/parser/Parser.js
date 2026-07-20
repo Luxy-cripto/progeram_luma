@@ -185,6 +185,35 @@ export class Parser {
 
         return expr;
     }
+
+    finishCall(callee) {
+
+        const args = [];
+
+        if (!this.check(TokenType.RIGHT_PAREN)) {
+
+            do {
+
+                args.push(
+                    this.expression()
+                );
+
+            } while (
+                this.match(TokenType.COMMA)
+            );
+        }
+
+        this.consume(
+            TokenType.RIGHT_PAREN,
+            "Expected ')' after arguments."
+        );
+
+        return new CallExpression(
+            callee,
+            args
+        );
+    }
+
     returnStatement() {
 
         const value =

@@ -17,11 +17,61 @@ import { Return } from "./Return.js";
 import { ReturnStatement } from "../ast/ReturnStatement.js";
 import { ArrayLiteral } from "../ast/ArrayLiteral.js";
 import { IndexExpression } from "../ast/IndexExpression.js";
+import { NativeFunction } from "./NativeFunction.js";
+import { input } from "./Input.js";
 
 export class Interpreter {
 
     constructor() {
-        this.environment = new Environment();
+
+        this.environment =
+            new Environment();
+
+        this.environment.define(
+            "len",
+            new NativeFunction(args => {
+                return args[0].length;
+            })
+        );
+
+        this.environment.define(
+            "type",
+            new NativeFunction(args => {
+
+                const value = args[0];
+
+                if (Array.isArray(value)) {
+                    return "array";
+                }
+
+                return typeof value;
+
+            })
+        );
+        this.environment.define(
+            "clock",
+            new NativeFunction(args => {
+
+                return Date.now();
+
+            })
+        );
+        this.environment.define(
+            "random",
+            new NativeFunction(args => {
+
+                return Math.random();
+
+            })
+        );
+        this.environment.define(
+            "input",
+            new NativeFunction(args => {
+
+                return input();
+
+            })
+        );
     }
 
     interpret(statements) {
@@ -114,30 +164,19 @@ export class Interpreter {
 
             while (
                 this.evaluate(
-                    this.condition
+                    statement.condition
                 )
             ) {
 
                 this.execute(
-                    this.body
-                );      
-          if (statement instanceof FunctionDeclaration) {
-
-            const func =
-                new LumaFunction(statement);
-
-            this.environment.define(
-                statement.name,
-                func
-            );
-
-            return;
-        }
+                    statement.body
+                );
 
             }
 
             return;
         }
+
 
         if (statement instanceof BlockStatement) {
 

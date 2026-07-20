@@ -1,5 +1,5 @@
-let numbers = [10, 20, 30]
+say "What is your name?"
 
-say numbers[0]
-say numbers[1]
-say numbers[2]
+let name = input()
+
+say name
