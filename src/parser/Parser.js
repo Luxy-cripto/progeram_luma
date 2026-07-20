@@ -12,6 +12,9 @@ import { Assignment } from "../ast/Assignment.js";
 import { ExpressionStatement } from "../ast/ExpressionStatement.js";
 import { FunctionDeclaration } from "../ast/FunctionDeclaration.js";
 import { CallExpression } from "../ast/CallExpression.js";
+import { ReturnStatement } from "../ast/ReturnStatement.js";
+import { ArrayLiteral } from "../ast/ArrayLiteral.js";
+import { IndexExpression } from "../ast/IndexExpression.js";
 
 export class Parser {
     constructor(tokens) {
@@ -140,44 +143,56 @@ export class Parser {
 
     call() {
 
-        let expr = this.primary();
+        let expr =
+            this.primary();
 
         while (true) {
 
-            if (this.match(TokenType.LEFT_PAREN)) {
+            if (
+                this.match(
+                    TokenType.LEFT_PAREN
+                )
+            ) {
 
-                const args = [];
+                expr =
+                    this.finishCall(expr);
 
-                if (!this.check(TokenType.RIGHT_PAREN)) {
+            } else if (
+                this.match(
+                    TokenType.LEFT_BRACKET
+                )
+            ) {
 
-                    do {
-
-                        args.push(
-                            this.expression()
-                        );
-
-                    } while (
-                        this.match(TokenType.COMMA)
-                    );
-
-                }
+                const index =
+                    this.expression();
 
                 this.consume(
-                    TokenType.RIGHT_PAREN,
-                    "Expected ')'."
+                    TokenType.RIGHT_BRACKET,
+                    "Expected ']'"
                 );
 
-                expr = new CallExpression(
-                    expr,
-                    args
-                );
+                expr =
+                    new IndexExpression(
+                        expr,
+                        index
+                    );
 
             } else {
+
                 break;
             }
         }
 
         return expr;
+    }
+    returnStatement() {
+
+        const value =
+            this.expression();
+
+        return new ReturnStatement(
+            value
+        );
     }
 
     // =========================
@@ -214,6 +229,9 @@ export class Parser {
 
         if (this.match(TokenType.WHILE)) {
             return this.whileStatement();
+        }
+        if (this.match(TokenType.RETURN)) {
+            return this.returnStatement();
         }
 
         return new ExpressionStatement(
@@ -444,6 +462,33 @@ export class Parser {
 
             return expr;
         }
+
+        if (this.match(TokenType.LEFT_BRACKET)) {
+
+                const elements = [];
+
+                if (!this.check(TokenType.RIGHT_BRACKET)) {
+
+                    do {
+
+                        elements.push(
+                            this.expression()
+                        );
+
+                    } while (
+                        this.match(TokenType.COMMA)
+                    );
+                }
+
+                this.consume(
+                    TokenType.RIGHT_BRACKET,
+                    "Expected ']'"
+                );
+
+                return new ArrayLiteral(
+                    elements
+                );
+            }
 
         throw new Error(
             "Expected expression."

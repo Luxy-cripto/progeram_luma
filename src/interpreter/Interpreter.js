@@ -13,6 +13,10 @@ import { Environment } from "./Environment.js";
 import { FunctionDeclaration } from "../ast/FunctionDeclaration.js";
 import { CallExpression } from "../ast/CallExpression.js";
 import { LumaFunction } from "./LumaFunction.js";
+import { Return } from "./Return.js";
+import { ReturnStatement } from "../ast/ReturnStatement.js";
+import { ArrayLiteral } from "../ast/ArrayLiteral.js";
+import { IndexExpression } from "../ast/IndexExpression.js";
 
 export class Interpreter {
 
@@ -43,17 +47,12 @@ export class Interpreter {
             return;
         }
 
-        if (statement instanceof FunctionDeclaration) {
+        if (statement instanceof ReturnStatement) {
 
-            const func =
-                new LumaFunction(statement);
+            const value =
+                this.evaluate(statement.value);
 
-            this.environment.define(
-                statement.name,
-                func
-            );
-
-            return;
+            throw new Return(value);
         }
 
         if (statement instanceof FunctionDeclaration) {
@@ -68,6 +67,7 @@ export class Interpreter {
 
             return;
         }
+
 
         if (statement instanceof SayStatement) {
 
@@ -114,13 +114,14 @@ export class Interpreter {
 
             while (
                 this.evaluate(
-                    statement.condition
+                    this.condition
                 )
             ) {
 
                 this.execute(
-                    statement.body
-                );        if (statement instanceof FunctionDeclaration) {
+                    this.body
+                );      
+          if (statement instanceof FunctionDeclaration) {
 
             const func =
                 new LumaFunction(statement);
@@ -215,13 +216,29 @@ export class Interpreter {
                 expr.name
             );
         }
+        if (expr instanceof IndexExpression) {
+
+            const array =
+                this.evaluate(expr.array);
+
+            const index =
+                this.evaluate(expr.index);
+
+            return array[index];
+        }
+
+        if (expr instanceof ArrayLiteral) {
+
+            return expr.elements.map(
+                element =>
+                    this.evaluate(element)
+            );
+        }
 
         if (expr instanceof CallExpression) {
 
             const callee =
                 this.evaluate(expr.callee);
-
-            console.log("CALLEE =", callee);
 
             const args =
                 expr.args.map(arg =>
@@ -310,6 +327,10 @@ export class Interpreter {
                     );
             }
         }
+
+
+        console.log(expr);
+        console.log(expr.constructor?.name);
 
         throw new Error(
             "Unknown expression."

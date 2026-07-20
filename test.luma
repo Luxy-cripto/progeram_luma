@@ -1,5 +1,5 @@
-fun add(a, b) {
-    say a + b
-}
+let numbers = [10, 20, 30]
 
-add(10, 20)
+say numbers[0]
+say numbers[1]
+say numbers[2]

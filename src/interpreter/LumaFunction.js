@@ -1,4 +1,5 @@
 import { Environment } from "./Environment.js";
+import { Return } from "./Return.js";
 
 export class LumaFunction {
 
@@ -33,6 +34,14 @@ export class LumaFunction {
             interpreter.execute(
                 this.declaration.body
             );
+
+        } catch (returned) {
+
+            if (returned instanceof Return) {
+                return returned.value;
+            }
+
+            throw returned;
 
         } finally {
 
