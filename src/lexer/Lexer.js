@@ -5,6 +5,7 @@ import { Token } from "../token/Token.js";
 const KEYWORDS = {
     say: TokenType.SAY,
     let: TokenType.LET,
+    var: TokenType.VAR,
 
     true: TokenType.TRUE,
     false: TokenType.FALSE,
@@ -14,7 +15,17 @@ const KEYWORDS = {
     while: TokenType.WHILE,
 
     fun: TokenType.FUN,
-    return: TokenType.RETURN
+    return: TokenType.RETURN,
+
+    for: TokenType.FOR,
+    to: TokenType.TO,
+    in: TokenType.IN,
+    break: TokenType.BREAK,
+    continue: TokenType.CONTINUE,
+    this: TokenType.THIS,
+    "class": TokenType.CLASS,
+    "super": TokenType.SUPER,
+    "static": TokenType.STATIC
 };
 
 export class Lexer {
@@ -111,6 +122,20 @@ export class Lexer {
         this.tokens.push(new Token(type, value,  this.line, this.column));
     }
 
+    peekNext() {
+
+        if (
+            this.current + 1 >=
+            this.source.length
+        ) {
+            return "\0";
+        }
+
+        return this.source[
+            this.current + 1
+        ];
+    }
+
     scanToken() {
         // this.startline = this.line;
         // this.startcolumn = this.column;
@@ -146,8 +171,40 @@ export class Lexer {
             case '*':
                 this.addToken(TokenType.STAR);  
                 break;
-            case '/':
-                this.addToken(TokenType.SLASH);
+            case "/":
+
+                if (this.match("/")) {
+
+                    while (
+                        this.peek() !== "\n" &&
+                        !this.isAtEnd()
+                    ) {
+                        this.advance();
+                    }
+
+                } else if (this.match("*")) {
+
+                    while (
+                        !(this.peek() === "*" &&
+                        this.peekNext() === "/") &&
+                        !this.isAtEnd()
+                    ) {
+
+                        this.advance();
+
+                    }
+
+                    this.advance();
+                    this.advance();
+
+                } else {
+
+                    this.addToken(
+                        TokenType.SLASH
+                    );
+
+                }
+
                 break;
             case "(":
                 this.addToken(TokenType.LEFT_PAREN);
@@ -198,7 +255,28 @@ export class Lexer {
             case "]":
                 this.addToken(TokenType.RIGHT_BRACKET);
             break;
-              
+
+            case "%":
+                this.addToken(TokenType.PERCENT);
+            break;
+
+            case ".":
+                this.addToken(TokenType.DOT);
+                break;
+
+            case ":":
+                this.addToken(TokenType.COLON);
+            break;
+
+            case ".":
+                this.addToken("DOT");
+             break;
+
+            case ";":
+                this.addToken("SEMICOLON");
+             break;
+
+
             default:
             throw new Error(`Unexpected character: ${char}`)
         }

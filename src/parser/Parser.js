@@ -15,8 +15,22 @@ import { CallExpression } from "../ast/CallExpression.js";
 import { ReturnStatement } from "../ast/ReturnStatement.js";
 import { ArrayLiteral } from "../ast/ArrayLiteral.js";
 import { IndexExpression } from "../ast/IndexExpression.js";
+import { ArrayAssignment } from "../ast/ArrayAssignment.js";
+import { ForStatement } from "../ast/ForStatement.js";
+import { ForEachStatement } from "../ast/ForEachStatement.js";
+import { BreakStatement } from "../ast/BreakStatement.js";
+import { ContinueStatement } from "../ast/ContinueStatement.js";
+import { ObjectLiteral } from "../ast/ObjectLiteral.js";
+import { PropertyAccess } from "../ast/PropertyAccess.js";
+import { PropertyAssignment } from "../ast/PropertyAssignment.js";
+import { FunctionExpression } from "../ast/FunctionExpression.js";
+import { ThisExpression } from "../ast/ThisExpression.js";
+import { ClassDeclaration } from "../ast/ClassDeclaration.js";
+import { SuperExpression } from "../ast/SuperExpression.js";
+
 
 export class Parser {
+
     constructor(tokens) {
         this.tokens = tokens;
         this.current = 0;
@@ -98,6 +112,77 @@ export class Parser {
     }
 
 
+    classDeclaration() {
+
+        const name = this.consume(
+            TokenType.IDENTIFIER,
+            "Expected class name."
+        );
+
+        let superclass = null;
+
+        if (this.match(TokenType.COLON)) {
+
+            superclass = this.consume(
+                TokenType.IDENTIFIER,
+                "Expected superclass name."
+            ).value;
+        }
+
+        this.consume(
+            TokenType.LEFT_BRACE,
+            "Expected '{' before class body."
+        );
+
+        const methods = [];
+        const staticMethods = [];
+
+        while (
+            !this.check(TokenType.RIGHT_BRACE) &&
+            !this.isAtEnd()
+        ) {
+
+            let isStatic = false;
+
+            if (this.match(TokenType.STATIC)) {
+                isStatic = true;
+            }
+
+            this.consume(
+                TokenType.FUN,
+                "Expected method."
+            );
+
+            const method =
+                this.functionDeclaration();
+
+            if (isStatic) {
+
+                staticMethods.push(
+                    method
+                );
+
+            } else {
+
+                methods.push(
+                    method
+                );
+            }
+        }
+
+        this.consume(
+            TokenType.RIGHT_BRACE,
+            "Expected '}' after class body."
+        );
+
+        return new ClassDeclaration(
+            name.value,
+            superclass,
+            methods,
+            staticMethods
+        );
+    }
+
     functionDeclaration() {
 
         const name = this.consume(
@@ -141,6 +226,50 @@ export class Parser {
         );
     }
 
+    objectLiteral() {
+
+        const properties = [];
+
+        while (
+            !this.check(TokenType.RIGHT_BRACE)
+        ) {
+
+            const key =
+                this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expected property name."
+                );
+
+            this.consume(
+                TokenType.COLON,
+                "Expected ':'."
+            );
+
+            const value =
+                this.expression();
+
+            properties.push({
+                key: key.value,
+                value
+            });
+
+            if (
+                !this.match(TokenType.COMMA)
+            ) {
+                break;
+            }
+        }
+
+        this.consume(
+            TokenType.RIGHT_BRACE,
+            "Expected '}'."
+        );
+
+        return new ObjectLiteral(
+            properties
+        );
+    }
+
     call() {
 
         let expr =
@@ -177,14 +306,88 @@ export class Parser {
                         index
                     );
 
+            } else if (
+                this.match(
+                    TokenType.DOT
+                )
+            ) {
+
+                const name =
+                    this.consume(
+                        TokenType.IDENTIFIER,
+                        "Expected property name."
+                    );
+
+                expr =
+                    new PropertyAccess(
+                        expr,
+                        name.value
+                    );
+
             } else {
 
                 break;
             }
+
         }
 
         return expr;
     }
+
+    forStatement() {
+
+        const name =
+            this.consume(
+                TokenType.IDENTIFIER,
+                "Expected variable name."
+            );
+
+        // for item in users
+        if (this.match(TokenType.IN)) {
+
+            const iterable =
+                this.expression();
+
+            const body =
+                this.block();
+
+            return new ForEachStatement(
+                name.value,
+                iterable,
+                body
+            );
+        }
+
+        // for i = 1 to 5
+
+        this.consume(
+            TokenType.EQUAL,
+            "Expected '='."
+        );
+
+        const start =
+            this.expression();
+
+        this.consume(
+            TokenType.TO,
+            "Expected 'to'."
+        );
+
+        const end =
+            this.expression();
+
+        const body =
+            this.block();
+
+        return new ForStatement(
+            name.value,
+            start,
+            end,
+            body
+        );
+    }
+
+
 
     finishCall(callee) {
 
@@ -214,10 +417,18 @@ export class Parser {
         );
     }
 
-    returnStatement() {
+   returnStatement() {
 
-        const value =
-            this.expression();
+        let value = null;
+
+        if (!this.check(TokenType.SEMICOLON)) {
+            value = this.expression();
+        }
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';' after return."
+        );
 
         return new ReturnStatement(
             value
@@ -229,10 +440,17 @@ export class Parser {
     // =========================
 
     parse() {
+
         const statements = [];
 
         while (!this.isAtEnd()) {
-            statements.push(this.statement());
+
+            const stmt =
+                this.statement();
+
+            if (stmt !== null) {
+                statements.push(stmt);
+            }
         }
 
         return statements;
@@ -263,16 +481,56 @@ export class Parser {
             return this.returnStatement();
         }
 
+        if (this.match(TokenType.FOR)) {
+            return this.forStatement();
+        }
+
+        if (this.match(TokenType.BREAK)) {
+            return new BreakStatement();
+        }
+
+        if (this.match(TokenType.CONTINUE)) {
+            return new ContinueStatement();
+        }
+
+        if (this.match(TokenType.SEMICOLON)) {
+            return null;
+        }
+
+        if (this.match(TokenType.CLASS)) {
+            return this.classDeclaration();
+        }
+
+        if (this.check(TokenType.LEFT_BRACE)) {
+            return this.block();
+        }
+
+       return this.expressionStatement();
+    }
+
+
+    expressionStatement() {
+
+        const expr =
+            this.expression();
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
+
         return new ExpressionStatement(
-            this.expression()
+            expr
         );
     }
 
     ifStatement() {
 
-        const condition = this.expression();
+        const condition =
+            this.expression();
 
-        const thenBranch = this.block();
+        const thenBranch =
+            this.block();
 
         let elseBranch = null;
 
@@ -280,11 +538,13 @@ export class Parser {
 
             if (this.match(TokenType.IF)) {
 
-                elseBranch = this.ifStatement();
+                elseBranch =
+                    this.ifStatement();
 
             } else {
 
-                elseBranch = this.block();
+                elseBranch =
+                    this.block();
 
             }
         }
@@ -296,7 +556,8 @@ export class Parser {
         );
     }
 
-    block(){
+    block() {
+
         this.consume(
             TokenType.LEFT_BRACE,
             "Expected '{'."
@@ -304,8 +565,17 @@ export class Parser {
 
         const statements = [];
 
-        while (!this.check(TokenType.RIGHT_BRACE) && !this.isAtEnd()) {
-            statements.push(this.statement());
+        while (
+            !this.check(TokenType.RIGHT_BRACE) &&
+            !this.isAtEnd()
+        ) {
+
+            const stmt =
+                this.statement();
+
+            if (stmt !== null) {
+                statements.push(stmt);
+            }
         }
 
         this.consume(
@@ -313,15 +583,17 @@ export class Parser {
             "Expected '}'."
         );
 
-        return new BlockStatement(statements);
+        return new BlockStatement(
+            statements
+        );
     }
-
     // =========================
     // STATEMENTS
     // =========================
 
     variableDeclaration() {
-        const name = this.consume(
+
+    const name = this.consume(
             TokenType.IDENTIFIER,
             "Expected variable name."
         );
@@ -331,7 +603,13 @@ export class Parser {
             "Expected '='."
         );
 
-        const initializer = this.expression();
+        const initializer =
+            this.expression();
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
 
         return new VariableDeclaration(
             name.value,
@@ -339,9 +617,18 @@ export class Parser {
         );
     }
 
-    sayStatement() {
+   sayStatement() {
+
+        const expr =
+            this.expression();
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
+
         return new SayStatement(
-            this.expression()
+            expr
         );
     }
 
@@ -387,6 +674,24 @@ export class Parser {
                 );
             }
 
+            if (expr instanceof PropertyAccess) {
+
+                return new PropertyAssignment(
+                    expr.object,
+                    expr.property,
+                    value
+                );
+            }
+
+            if (expr instanceof IndexExpression) {
+
+                return new ArrayAssignment(
+                    expr.array,
+                    expr.index,
+                    value
+                );
+            }
+
             throw new Error(
                 "Invalid assignment target."
             );
@@ -394,7 +699,6 @@ export class Parser {
 
         return expr;
     }
-
     equality() {
         let expr = this.comparison();
 
@@ -445,7 +749,7 @@ export class Parser {
 
         let expr = this.unary();
 
-        while (this.match(TokenType.STAR, TokenType.SLASH)) {
+        while (this.match(TokenType.STAR, TokenType.SLASH, TokenType.PERCENT)) {
 
             const operator = this.previous();
 
@@ -474,7 +778,31 @@ export class Parser {
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Literal(this.previous().value);
         }
-        
+
+        if (this.match(TokenType.THIS)) {
+
+            return new ThisExpression();
+
+        }
+
+        if (this.match(TokenType.SUPER)) {
+
+            this.consume(
+                TokenType.DOT,
+                "Expect '.' after super."
+            );
+
+            const method =
+                this.consume(
+                    TokenType.IDENTIFIER,
+                    "Expect superclass method name."
+                );
+
+            return new SuperExpression(
+                method.value
+            );
+        }
+                
 
         if (this.match(TokenType.IDENTIFIER)) {
             return new Identifier(this.previous().value);
@@ -518,7 +846,48 @@ export class Parser {
                     elements
                 );
             }
+        if (this.match(TokenType.LEFT_BRACE)) {
+            return this.objectLiteral();
+        }
 
+        if (this.match(TokenType.FUN)) {
+
+            this.consume(
+                TokenType.LEFT_PAREN,
+                "Expected '(' after fun."
+            );
+
+            const params = [];
+
+            if (!this.check(TokenType.RIGHT_PAREN)) {
+
+                do {
+
+                    params.push(
+                        this.consume(
+                            TokenType.IDENTIFIER,
+                            "Expected parameter name."
+                        ).value
+                    );
+
+                } while (
+                    this.match(TokenType.COMMA)
+                );
+            }
+
+            this.consume(
+                TokenType.RIGHT_PAREN,
+                "Expected ')'."
+            );
+
+            const body =
+                this.block();
+
+            return new FunctionExpression(
+                params,
+                body
+            );
+        }
         throw new Error(
             "Expected expression."
         );

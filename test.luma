@@ -1,5 +1,21 @@
-say "What is your name?"
+let a = "global";
 
-let name = input()
+fun outer() {
 
-say name
+    let a = "outer";
+
+    fun middle() {
+
+        let a = "middle";
+
+        fun inner() {
+            say a;
+        }
+
+        inner();
+    }
+
+    middle();
+}
+
+outer();

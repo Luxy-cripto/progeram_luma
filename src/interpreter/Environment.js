@@ -40,4 +40,33 @@ export class Environment {
             `Variable '${name}' not defined.`
         );
     }
+
+    ancestor(distance) {
+
+        let env = this;
+
+        for (
+            let i = 0;
+            i < distance;
+            i++
+        ) {
+
+            env = env.parent;
+        }
+
+        return env;
+    }
+
+  getAt(distance, name) {
+
+        const env =
+            this.ancestor(distance);
+        return env.values[name];
+    }
+
+    assignAt(distance, name, value) {
+
+        this.ancestor(distance)
+            .values[name] = value;
+    }
 }

@@ -8,6 +8,17 @@ export const TokenType = {
     FUN: "FUN",
     RETURN: "RETURN",
     COMMA: "COMMA",
+    FOR: "FOR",
+    TO: "TO",
+    IN: "IN",
+    BREAK: "BREAK",
+    CONTINUE: "CONTINUE",
+    THIS: "THIS",
+    CLASS: "CLASS",
+    SUPER: "SUPER",
+    STATIC: "STATIC",
+    VAR: "VAR",
+
 
     // Literals.
     IDENTIFIER: "IDENTIFIER",
@@ -26,6 +37,11 @@ export const TokenType = {
     COMMA: "COMMA",
     LEFT_BRACKET: "LEFT_BRACKET",
     RIGHT_BRACKET: "RIGHT_BRACKET",
+    PERCENT: "PERCENT",
+    DOT: "DOT",
+    COLON: "COLON",
+    SEMICOLON: "SEMICOLON",
+    
 
     // SYMBOLS
     EQUAL: "EQUAL",

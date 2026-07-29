@@ -3,8 +3,37 @@ import { Return } from "./Return.js";
 
 export class LumaFunction {
 
-    constructor(declaration) {
-        this.declaration = declaration;
+    constructor(
+        declaration,
+        closure
+    ) {
+        this.declaration =
+            declaration;
+
+        this.closure =
+            closure;
+
+        this.boundThis = null;
+    }
+
+
+    bind(instance) {
+
+
+        const bound =
+            new LumaFunction(
+                this.declaration,
+                this.closure
+            );
+
+        bound.boundThis =
+            instance;
+
+        return bound;
+    }
+    arity() {
+        
+        return this.declaration.params.length;
     }
 
     call(interpreter, args) {
@@ -13,13 +42,26 @@ export class LumaFunction {
             interpreter.environment;
 
         const local =
-            new Environment(previous);
+            new Environment(
+                this.closure
+            );
+
+        if (
+            this.boundThis !== null
+        ) {
+
+            local.define(
+                "this",
+                this.boundThis
+            );
+        }
 
         for (
             let i = 0;
             i < this.declaration.params.length;
             i++
         ) {
+
             local.define(
                 this.declaration.params[i],
                 args[i]
@@ -29,15 +71,19 @@ export class LumaFunction {
         interpreter.environment =
             local;
 
-        try {
+         try {
 
-            interpreter.execute(
-                this.declaration.body
-            );
+        for ( const stmt of
+            this.declaration.body.statements
+        ) {
+            interpreter.execute(stmt);
+        }
 
         } catch (returned) {
 
-            if (returned instanceof Return) {
+            if (
+                returned instanceof Return
+            ) {
                 return returned.value;
             }
 
@@ -48,5 +94,7 @@ export class LumaFunction {
             interpreter.environment =
                 previous;
         }
+
+        return null;
     }
 }

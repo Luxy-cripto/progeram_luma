@@ -19,18 +19,60 @@ import { ArrayLiteral } from "../ast/ArrayLiteral.js";
 import { IndexExpression } from "../ast/IndexExpression.js";
 import { NativeFunction } from "./NativeFunction.js";
 import { input } from "./Input.js";
+import { ArrayAssignment } from "../ast/ArrayAssignment.js";
+import { ForStatement } from "../ast/ForStatement.js";
+import { ForEachStatement } from "../ast/ForEachStatement.js";
+import { BreakStatement } from "../ast/BreakStatement.js";
+import { Break } from "./Break.js";
+import { Continue } from "./Continue.js";
+import { ContinueStatement } from "../ast/ContinueStatement.js";
+import { ObjectLiteral } from "../ast/ObjectLiteral.js";
+import { PropertyAccess } from "../ast/PropertyAccess.js";
+import { PropertyAssignment } from "../ast/PropertyAssignment.js";
+import { FunctionExpression } from "../ast/FunctionExpression.js";
+import { ThisExpression } from "../ast/ThisExpression.js";
+import { LumaClass } from "../runtime/LumaClass.js";
+import { LumaInstance } from "../runtime/LumaInstance.js";
+import { ClassDeclaration } from "../ast/ClassDeclaration.js";
+import { SetProperty } from "../ast/SetProperty.js";
+import { SuperExpression } from "../ast/SuperExpression.js";
 
 export class Interpreter {
 
     constructor() {
 
-        this.environment =
+        this.globals =
             new Environment();
+
+        this.environment =
+            this.globals;
+
+        this.locals =
+            new Map();
 
         this.environment.define(
             "len",
             new NativeFunction(args => {
                 return args[0].length;
+            })
+        );
+
+        this.environment.define(
+            "upper",
+            new NativeFunction(args => {
+                return String(args[0]).toUpperCase();
+            })
+        );
+
+
+        this.environment.define(
+            "trim",
+            new NativeFunction(args => {
+
+                return String(
+                    args[0]
+                ).trim();
+
             })
         );
 
@@ -64,6 +106,56 @@ export class Interpreter {
 
             })
         );
+        
+        this.environment.define(
+            "push",
+            new NativeFunction(args => {
+
+                args[0].push(args[1]);
+
+                return null;
+
+            })
+        );
+
+        this.environment.define(
+            "pop",
+            new NativeFunction(args => {
+
+                return args[0].pop();
+
+            })
+        );
+
+        this.environment.define(
+            "first",
+            new NativeFunction(args => {
+
+                return args[0][0];
+
+            })
+        );
+
+        this.environment.define(
+            "last",
+            new NativeFunction(args => {
+
+                return args[0][args[0].length - 1];
+
+            })
+        );
+
+        this.environment.define(
+            "clear",
+            new NativeFunction(args => {
+
+                args[0].length = 0;
+
+                return null;
+
+            })
+        );
+
         this.environment.define(
             "input",
             new NativeFunction(args => {
@@ -74,13 +166,171 @@ export class Interpreter {
         );
     }
 
-    interpret(statements) {
+    resolve(expr, depth) {
 
-        for (const statement of statements) {
-            this.execute(statement);
+        this.locals.set(
+            expr,
+            depth
+        );
+    }
+
+    lookupVariable(name, expr) {
+
+        const distance =
+            this.locals.get(expr);
+
+        if (distance !== undefined) {
+            return this.environment.getAt(
+                distance,
+                name
+            );
         }
 
+        return this.globals.get(name);
     }
+
+ 
+
+
+   interpret(statements) {
+
+        try {
+
+            for (const statement of statements) {
+                this.execute(statement);
+            }
+
+        } catch (error) {
+
+            if (error instanceof Break) {
+                throw new Error(
+                    "Cannot use break outside loop."
+                );
+            }
+
+            if (error instanceof Continue) {
+                throw new Error(
+                    "Cannot use continue outside loop."
+                );
+            }
+
+            if (error instanceof Return) {
+                throw new Error(
+                    "Cannot use return outside function."
+                );
+            }
+
+            throw error;
+        }
+    }
+
+    executeClassDeclaration(stmt) {
+
+
+        for (const method of stmt.methods) {
+
+          
+        }
+
+        let superclass = null;
+
+        if (stmt.superclass) {
+
+            superclass =
+                this.environment.get(
+                    typeof stmt.superclass === "string"
+                        ? stmt.superclass
+                        : stmt.superclass.name
+                );
+
+            if (
+                !(superclass instanceof LumaClass)
+            ) {
+
+                throw new Error(
+                    "Superclass must be a class."
+                );
+            }
+
+
+        }
+
+        const previousEnv =
+            this.environment;
+
+        if (superclass) {
+
+            this.environment =
+                new Environment(
+                    this.environment
+                );
+
+            this.environment.define(
+                "super",
+                superclass
+            );
+
+            
+        }
+
+ 
+        const methods = {};
+        const staticMethods = {};
+
+        for (const method of stmt.staticMethods) {
+
+            staticMethods[method.name] =
+                new LumaFunction(
+                    method,
+                    this.environment
+                );
+
+            
+        }
+
+        for (const method of stmt.methods) {
+
+            methods[method.name] =
+                new LumaFunction(
+                    method,
+                    this.environment
+                );
+
+            
+        }
+
+
+        const klass =
+            new LumaClass(
+                stmt.name,
+                methods,
+                superclass,
+                staticMethods,
+                
+            );
+
+ 
+        if (superclass) {
+
+            this.environment =
+                previousEnv;
+        }
+
+   
+        this.environment.define(
+            stmt.name,
+            klass
+        );
+
+       
+    }
+
+    visitClassDeclaration(stmt) {
+
+       
+
+    }
+
 
     execute(statement) {
 
@@ -97,6 +347,119 @@ export class Interpreter {
             return;
         }
 
+        if ( statement instanceof PropertyAssignment
+        ) {
+
+            const object =
+                this.evaluate(
+                    statement.object
+                );
+
+            const value =
+                this.evaluate(
+                    statement.value
+                );
+
+            object.set(
+                statement.property,
+                value
+            );
+
+            return;
+        }
+
+        if (statement instanceof ClassDeclaration) {
+
+            this.executeClassDeclaration(
+                statement
+            );
+
+            return;
+        }
+
+        if (statement instanceof ForStatement) {
+
+            const start =
+                this.evaluate(
+                    statement.start
+                );
+
+            const end =
+                this.evaluate(
+                    statement.end
+                );
+
+            for (
+            let i = start;
+            i <= end;
+            i++
+        ) {
+
+            this.environment.define(
+                statement.variable,
+                i
+            );
+
+            try {
+
+                this.execute(
+                    statement.body
+                );
+
+            } catch (error) {
+
+                if (error instanceof Continue) {
+                    continue;
+                }
+
+                throw error;
+            }
+        }
+
+            return;
+        }
+
+        if (statement instanceof ForEachStatement) {
+
+            const iterable =
+                this.evaluate(
+                    statement.iterable
+                );
+
+            for (const item of iterable) {
+
+                this.environment.define(
+                    statement.variable,
+                    item
+                );
+
+                try {
+
+                    this.execute(
+                        statement.body
+                    );
+
+                } catch (error) {
+
+                    if (error instanceof Break) {
+                        break;
+                    }
+
+                    throw error;
+                }
+            }
+
+            return;
+        }
+
+        if (statement instanceof BreakStatement) {
+            throw new Break();
+        }
+
+        if (statement instanceof ContinueStatement) {
+            throw new Continue();
+        }
+
         if (statement instanceof ReturnStatement) {
 
             const value =
@@ -107,25 +470,33 @@ export class Interpreter {
 
         if (statement instanceof FunctionDeclaration) {
 
-            const func =
-                new LumaFunction(statement);
+            const fn =
+                new LumaFunction(
+                    statement,
+                    this.environment
+                );
 
             this.environment.define(
                 statement.name,
-                func
+                fn
             );
 
             return;
         }
 
-
         if (statement instanceof SayStatement) {
 
-            const value =
-                this.evaluate(statement.expression);
+            let value =
+                this.evaluate(
+                    statement.expression
+                );
+
+            if (typeof value === "string") {
+                value =
+                    this.interpolate(value);
+            }
 
             console.log(value);
-
             return;
         }
 
@@ -163,15 +534,23 @@ export class Interpreter {
         if (statement instanceof WhileStatement) {
 
             while (
-                this.evaluate(
-                    statement.condition
-                )
+                this.evaluate(statement.condition)
             ) {
 
-                this.execute(
-                    statement.body
-                );
+                try {
 
+                    this.execute(
+                        statement.body
+                    );
+
+                } catch (error) {
+
+                    if (error instanceof Break) {
+                        break;
+                    }
+
+                    throw error;
+                }
             }
 
             return;
@@ -179,6 +558,7 @@ export class Interpreter {
 
 
         if (statement instanceof BlockStatement) {
+
 
             const previous =
                 this.environment;
@@ -189,6 +569,11 @@ export class Interpreter {
             try {
 
                 for (const stmt of statement.statements) {
+
+                    if (stmt == null) {
+                        continue;
+                    }
+
                     this.execute(stmt);
                 }
 
@@ -201,60 +586,116 @@ export class Interpreter {
             return;
         }
 
+        
+
         throw new Error(
             "Unknown statement."
         );
     }
 
-    call(interpreter, args) {
+    interpolate(text) {
 
-        const environment =
-            new Environment(
-                interpreter.environment
-            );
+        return text.replace(
+            /\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g,
+            (_, name) => {
 
-        for (
-            let i = 0;
-            i < this.declaration.params.length;
-            i++
-        ) {
-            environment.define(
-                this.declaration.params[i],
-                args[i]
-            );
-        }
+                try {
 
-        const previous =
-            interpreter.environment;
+                    return this.environment.get(
+                        name
+                    );
 
-        interpreter.environment =
-            environment;
+                } catch {
 
-        try {
+                    return `{${name}}`;
 
-            interpreter.execute(
-                this.declaration.body
-            );
+                }
 
-        } finally {
-
-            interpreter.environment =
-                previous;
-        }
+            }
+        );
     }
 
     evaluate(expr) {
+
 
         if (expr instanceof Literal) {
             return expr.value;
         }
 
-        if (expr instanceof Identifier) {
+            if (expr instanceof Identifier) {
 
-            return this.environment.get(
-                expr.name
+                return this.lookupVariable(
+                    expr.name,
+                    expr
+                );
+        }
+
+        if (expr instanceof SuperExpression) {
+
+            let superclass;
+
+            try {
+
+                superclass =
+                    this.environment.get("super");
+
+            } catch {
+
+                throw new Error(
+                    "Cannot use 'super' outside a subclass."
+                );
+            }
+
+            const thisValue =
+                this.environment.get(
+                    "this"
+                );
+
+            let method = null;
+
+            if (
+                thisValue instanceof LumaClass
+            ) {
+
+                method =
+                    superclass.findStaticMethod(
+                        expr.method
+                    );
+
+            } else {
+
+                method =
+                    superclass.findMethod(
+                        expr.method
+                    );
+            }
+
+            if (!method) {
+
+                throw new Error(
+                    "Undefined superclass method '" +
+                    expr.method +
+                    "'."
+                );
+            }
+
+            return method.bind(
+                thisValue
             );
         }
+        
+        if (expr instanceof ThisExpression) {
+
+            try {
+                return this.environment.get("this");
+            } catch {
+
+                throw new Error(
+                    "Cannot use 'this' outside a class method."
+                );
+            }
+        }
+
         if (expr instanceof IndexExpression) {
 
             const array =
@@ -289,6 +730,55 @@ export class Interpreter {
                 args
             );
         }
+        
+        if (expr instanceof FunctionExpression) {
+
+            const declaration = {
+                params: expr.params,
+                body: expr.body
+            };
+
+            return new LumaFunction(
+                declaration,
+                this.environment
+            );
+        }
+
+        if (expr instanceof PropertyAssignment) {
+
+            const object =
+                this.evaluate(
+                    expr.object
+                );
+
+            const value =
+                this.evaluate(
+                    expr.value
+                );
+
+            object.set(
+                expr.property,
+                value
+            );
+
+            return value;
+        }
+
+        if (expr instanceof ArrayAssignment) {
+
+            const array =
+                this.evaluate(expr.array);
+
+            const index =
+                this.evaluate(expr.index);
+
+            const value =
+                this.evaluate(expr.value);
+
+            array[index] = value;
+
+            return value;
+        }
 
         if (expr instanceof Assignment) {
 
@@ -302,6 +792,74 @@ export class Interpreter {
 
             return value;
         }
+
+        if (expr instanceof ObjectLiteral) {
+
+            const object = {};
+
+            for (
+                const property
+                of expr.properties
+            ) {
+
+                object[property.key] =
+                    this.evaluate(
+                        property.value
+                    );
+            }
+
+            return object;
+        }
+
+
+        if (expr instanceof PropertyAccess) {
+
+            const object =
+                this.evaluate(
+                    expr.object
+                );
+
+            if (
+                object instanceof LumaInstance
+            ) {
+
+                return object.get(
+                    expr.property
+                );
+            }
+
+            if (
+                object instanceof LumaClass
+            ) {
+
+                if (expr.property in object) {
+                    return object[expr.property];
+                }
+
+                const method =
+                    object.findStaticMethod(
+                        expr.property
+                    );
+
+                if (method) {
+
+                    // PENTING
+                    return method.bind(
+                        object
+                    );
+                }
+
+                throw new Error(
+                    `Undefined static method '${expr.property}'.`
+                );
+            }
+
+            throw new Error(
+                "Only instances and classes have properties."
+            );
+        }
+
+        
 
         if (expr instanceof UnaryExpression) {
 
@@ -342,6 +900,9 @@ export class Interpreter {
                 case "SLASH":
                     return left / right;
 
+                case "PERCENT":
+                    return left % right;
+
                 case "EQUAL_EQUAL":
                     return left == right;
 
@@ -368,9 +929,10 @@ export class Interpreter {
         }
 
 
-        console.log(expr);
-        console.log(expr.constructor?.name);
-
+      
+       if (expr === null) {
+            return null;
+        }
         throw new Error(
             "Unknown expression."
         );
