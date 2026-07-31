@@ -18,6 +18,7 @@ export const TokenType = {
     SUPER: "SUPER",
     STATIC: "STATIC",
     VAR: "VAR",
+    IMPORT: "IMPORT",
 
 
     // Literals.

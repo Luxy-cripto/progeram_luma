@@ -196,6 +196,108 @@ export class Resolver {
 
                 return;
 
+            case "ForStatement":
+
+                if (stmt.initializer) {
+                    this.resolveStatement(
+                        stmt.initializer
+                    );
+                }
+
+                if (stmt.condition) {
+                    this.resolveExpression(
+                        stmt.condition
+                    );
+                }
+
+                if (stmt.increment) {
+                    this.resolveExpression(
+                        stmt.increment
+                    );
+                }
+
+                this.resolveStatement(
+                    stmt.body
+                );
+
+                return;
+
+            case "ForEachStatement":
+
+                this.beginScope();
+
+                this.declare(
+                    stmt.variable
+                );
+
+                this.define(
+                    stmt.variable
+                );
+
+                this.resolveExpression(
+                    stmt.iterable
+                );
+
+                this.resolveStatement(
+                    stmt.body
+                );
+
+                this.endScope();
+
+                return;
+
+            case "ForStatement":
+
+                this.beginScope();
+
+                this.declare(
+                    stmt.variable
+                );
+
+                this.define(
+                    stmt.variable
+                );
+
+                this.resolveExpression(
+                    stmt.start
+                );
+
+                this.resolveExpression(
+                    stmt.end
+                );
+
+                this.resolveStatement(
+                    stmt.body
+                );
+
+                this.endScope();
+
+                return;
+
+            case "ForEachStatement":
+
+                this.beginScope();
+
+                this.declare(
+                    stmt.variable
+                );
+
+                this.define(
+                    stmt.variable
+                );
+
+                this.resolveExpression(
+                    stmt.iterable
+                );
+
+                this.resolveStatement(
+                    stmt.body
+                );
+
+                this.endScope();
+
+                return;
+
             default:
                 return;
         }
@@ -265,6 +367,153 @@ export class Resolver {
                 }
 
                 return;
+            
+            case "FunctionExpression":
+
+                this.resolveFunction(expr);
+
+                return;
+
+            case "ArrayLiteral":
+
+                for (const item of expr.elements) {
+                    this.resolveExpression(item);
+                }
+
+                return;
+
+            case "ObjectLiteral":
+
+                for (const value of Object.values(expr.properties)) {
+                    this.resolveExpression(value);
+                }
+
+                return;
+
+            case "IndexExpression":
+
+                this.resolveExpression(expr.array);
+                this.resolveExpression(expr.index);
+
+                return;
+
+            case "PropertyAccess":
+
+                this.resolveExpression(expr.object);
+
+                return;
+
+            case "PropertyAssignment":
+
+                this.resolveExpression(expr.object);
+                this.resolveExpression(expr.value);
+
+                return;
+
+            case "SetProperty":
+
+                this.resolveExpression(expr.object);
+                this.resolveExpression(expr.value);
+
+                return;
+
+            case "ArrayAssignment":
+
+                this.resolveExpression(expr.array);
+                this.resolveExpression(expr.index);
+                this.resolveExpression(expr.value);
+
+                return;
+
+            case "FunctionExpression":
+
+            this.resolveFunction(
+                expr
+            );
+
+            return;
+
+        case "ArrayLiteral":
+
+            for (const element of expr.elements) {
+
+                this.resolveExpression(
+                    element
+                );
+            }
+
+            return;
+
+            case "ObjectLiteral":
+
+                for (const property of expr.properties) {
+
+                    this.resolveExpression(
+                        property.value
+                    );
+                }
+
+            return;
+
+        case "IndexExpression":
+
+            this.resolveExpression(
+                expr.array
+            );
+
+            this.resolveExpression(
+                expr.index
+            );
+
+            return;
+
+        case "PropertyAccess":
+
+            this.resolveExpression(
+                expr.object
+            );
+
+            return;
+
+        case "PropertyAssignment":
+
+            this.resolveExpression(
+                expr.object
+            );
+
+            this.resolveExpression(
+                expr.value
+            );
+
+            return;
+
+        case "SetProperty":
+
+            this.resolveExpression(
+                expr.object
+            );
+
+            this.resolveExpression(
+                expr.value
+            );
+
+            return;
+
+        case "ArrayAssignment":
+
+            this.resolveExpression(
+                expr.array
+            );
+
+            this.resolveExpression(
+                expr.index
+            );
+
+            this.resolveExpression(
+                expr.value
+            );
+
+            return;
 
             default:
                 return;

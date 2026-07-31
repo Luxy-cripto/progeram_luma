@@ -36,6 +36,13 @@ import { LumaInstance } from "../runtime/LumaInstance.js";
 import { ClassDeclaration } from "../ast/ClassDeclaration.js";
 import { SetProperty } from "../ast/SetProperty.js";
 import { SuperExpression } from "../ast/SuperExpression.js";
+import { ImportStatement } from "../ast/ImportStatement.js";
+
+import fs from "fs";
+import { Lexer } from "../lexer/Lexer.js";
+import { Parser } from "../parser/Parser.js";
+import { Resolver } from "../resolver/Resolver.js";
+
 
 export class Interpreter {
 
@@ -103,6 +110,312 @@ export class Interpreter {
             new NativeFunction(args => {
 
                 return Math.random();
+
+            })
+        );
+
+        this.environment.define(
+            "sqrt",
+            new NativeFunction(args => {
+
+                return Math.sqrt(args[0]);
+
+            })
+        );
+
+        this.environment.define(
+            "pow",
+            new NativeFunction(args => {
+
+                return Math.pow(
+                    args[0],
+                    args[1]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "floor",
+            new NativeFunction(args => {
+
+                return Math.floor(args[0]);
+
+            })
+        );
+
+        this.environment.define(
+            "ceil",
+            new NativeFunction(args => {
+
+                return Math.ceil(args[0]);
+
+            })
+        );
+
+        this.environment.define(
+            "abs",
+            new NativeFunction(args => {
+
+                return Math.abs(args[0]);
+
+            })
+        );
+
+        this.environment.define(
+            "round",
+            new NativeFunction(args => {
+
+                return Math.round(
+                    args[0]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "min",
+            new NativeFunction(args => {
+
+                return Math.min(
+                    ...args
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "max",
+            new NativeFunction(args => {
+
+                return Math.max(
+                    ...args
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "lower",
+            new NativeFunction(args => {
+
+                return String(
+                    args[0]
+                ).toLowerCase();
+
+            })
+        );
+
+        this.environment.define(
+            "contains",
+            new NativeFunction(args => {
+
+                return String(
+                    args[0]
+                ).includes(
+                    String(args[1])
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "replace",
+            new NativeFunction(args => {
+
+                return String(
+                    args[0]
+                ).replace(
+                    String(args[1]),
+                    String(args[2])
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "write",
+            new NativeFunction(args => {
+
+                fs.writeFileSync(
+                    args[0],
+                    String(args[1])
+                );
+
+                return null;
+
+            })
+        );
+
+        this.environment.define(
+            "read",
+            new NativeFunction(args => {
+
+                return fs.readFileSync(
+                    args[0],
+                    "utf8"
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "append",
+            new NativeFunction(args => {
+
+                fs.appendFileSync(
+                    args[0],
+                    String(args[1])
+                );
+
+                return null;
+
+            })
+        );
+
+        this.environment.define(
+            "sqrt",
+            new NativeFunction(args => {
+                return Math.sqrt(args[0]);
+            })
+        );
+
+        this.environment.define(
+            "floor",
+            new NativeFunction(args => {
+                return Math.floor(args[0]);
+            })
+        );
+
+        this.environment.define(
+            "ceil",
+            new NativeFunction(args => {
+                return Math.ceil(args[0]);
+            })
+        );
+
+        this.environment.define(
+            "abs",
+            new NativeFunction(args => {
+                return Math.abs(args[0]);
+            })
+        );
+
+        this.environment.define(
+            "exists",
+            new NativeFunction(args => {
+
+                return fs.existsSync(
+                    args[0]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "delete",
+            new NativeFunction(args => {
+
+                if (
+                    fs.existsSync(args[0])
+                ) {
+
+                    fs.unlinkSync(
+                        args[0]
+                    );
+                }
+
+                return null;
+
+            })
+        );
+
+        this.environment.define(
+            "keys",
+            new NativeFunction(args => {
+
+                return Object.keys(
+                    args[0]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "values",
+            new NativeFunction(args => {
+
+                return Object.values(
+                    args[0]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "has",
+            new NativeFunction(args => {
+
+                return Object.prototype.hasOwnProperty.call(
+                    args[0],
+                    args[1]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "split",
+            new NativeFunction(args => {
+
+                return String(args[0]).split(
+                    args[1]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "join",
+            new NativeFunction(args => {
+
+                return args[0].join(
+                    args[1]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "replace",
+            new NativeFunction(args => {
+
+                return String(args[0]).replace(
+                    args[1],
+                    args[2]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "jsonParse",
+            new NativeFunction(args => {
+
+                return JSON.parse(
+                    args[0]
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "jsonStringify",
+            new NativeFunction(args => {
+
+                return JSON.stringify(
+                    args[0]
+                );
 
             })
         );
@@ -556,6 +869,42 @@ export class Interpreter {
             return;
         }
 
+        if (
+            statement instanceof ImportStatement
+        ) {
+
+            const source =
+                fs.readFileSync(
+                    statement.path,
+                    "utf8"
+                );
+
+            const lexer =
+                new Lexer(source);
+
+            const tokens =
+                lexer.scanTokens();
+
+            const parser =
+                new Parser(tokens);
+
+            const statements =
+                parser.parse();
+
+            const resolver =
+                new Resolver(this);
+
+            resolver.resolve(
+                statements
+            );
+
+            this.interpret(
+                statements
+            );
+
+            return;
+        }
+
 
         if (statement instanceof BlockStatement) {
 
@@ -852,6 +1201,16 @@ export class Interpreter {
                 throw new Error(
                     `Undefined static method '${expr.property}'.`
                 );
+            }
+
+            if (
+                typeof object === "object" &&
+                object !== null
+            ) {
+
+                return object[
+                    expr.property
+                ];
             }
 
             throw new Error(

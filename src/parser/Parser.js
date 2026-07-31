@@ -27,6 +27,8 @@ import { FunctionExpression } from "../ast/FunctionExpression.js";
 import { ThisExpression } from "../ast/ThisExpression.js";
 import { ClassDeclaration } from "../ast/ClassDeclaration.js";
 import { SuperExpression } from "../ast/SuperExpression.js";
+import { LumaError } from "../error/LumaError.js";
+import { ImportStatement } from "../ast/ImportStatement.js";
 
 
 export class Parser {
@@ -69,13 +71,20 @@ export class Parser {
         }
         return false;
     }
-
     consume(type, message) {
+
         if (this.check(type)) {
             return this.advance();
         }
 
-        throw new Error(message);
+        const token =
+            this.peek();
+
+        throw new Error(
+            `${message}
+    Line ${token.line}, Column ${token.column}
+    Found: ${token.type}`
+        );
     }
 
     whileStatement() {
@@ -109,6 +118,24 @@ export class Parser {
         }
 
         return this.call();
+    }
+
+    importStatement() {
+
+        const path =
+            this.consume(
+                TokenType.STRING,
+                "Expected module path."
+            );
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
+
+        return new ImportStatement(
+            path.value
+        );
     }
 
 
@@ -495,6 +522,10 @@ export class Parser {
 
         if (this.match(TokenType.SEMICOLON)) {
             return null;
+        }
+
+        if (this.match(TokenType.IMPORT)) {
+            return this.importStatement();
         }
 
         if (this.match(TokenType.CLASS)) {

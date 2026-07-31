@@ -1,21 +1,8 @@
-let a = "global";
+let text =
+    "{\"name\":\"Luxy\",\"age\":17}";
 
-fun outer() {
+let user =
+    jsonParse(text);
 
-    let a = "outer";
-
-    fun middle() {
-
-        let a = "middle";
-
-        fun inner() {
-            say a;
-        }
-
-        inner();
-    }
-
-    middle();
-}
-
-outer();
+say user.name;
+say user.age;

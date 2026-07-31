@@ -1,42 +1,112 @@
+#!/usr/bin/env node
+
 import fs from "fs";
+import readline from "readline";
+
 import { Lexer } from "./lexer/Lexer.js";
 import { Parser } from "./parser/Parser.js";
 import { Interpreter } from "./interpreter/Interpreter.js";
 import { Resolver } from "./resolver/Resolver.js";
 
-const source = fs.readFileSync("test.luma", "utf-8");
+function run(source, interpreter) {
 
-// Lexer
-const lexer = new Lexer(source);
-const tokens = lexer.scanTokens();
+    const lexer =
+        new Lexer(source);
 
-// Parser
-const parser = new Parser(tokens);
-const statements = parser.parse();
+    const tokens =
+        lexer.scanTokens();
 
-// Interpreter
-const interpreter = new Interpreter();
+    const parser =
+        new Parser(tokens);
 
-// Resolver
-const resolver = new Resolver(interpreter);
-resolver.resolve(
-    statements
-);
+    const statements =
+        parser.parse();
 
-// Debug
-const DEBUG = false;
+    const resolver =
+        new Resolver(interpreter);
 
-if (DEBUG) {
-    console.log("Tokens:");
-    for (const token of tokens) {
-        console.log(token);
-    }
+    resolver.resolve(
+        statements
+    );
 
-    console.log("Statements:");
-    for (const stmt of statements) {
-        console.dir(stmt, { depth: null });
-    }
+    interpreter.interpret(
+        statements
+    );
 }
 
+const file =
+    process.argv[2];
 
-interpreter.interpret(statements);
+if (file) {
+
+    try {
+
+        const source =
+            fs.readFileSync(
+                file,
+                "utf8"
+            );
+
+        const interpreter =
+            new Interpreter();
+
+        run(
+            source,
+            interpreter
+        );
+
+    } catch (error) {
+
+        console.error(
+            "\n[Luma Error]"
+        );
+
+        console.error(
+            error.message
+        );
+
+        process.exit(1);
+    }
+
+} else {
+
+    console.log(
+        "Luma REPL v0.4"
+    );
+
+    const rl =
+        readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+    const interpreter =
+        new Interpreter();
+
+    function prompt() {
+
+        rl.question(
+            "> ",
+            line => {
+
+                try {
+
+                    run(
+                        line,
+                        interpreter
+                    );
+
+                } catch (error) {
+
+                    console.error(
+                        error.message
+                    );
+                }
+
+                prompt();
+            }
+        );
+    }
+
+    prompt();
+}

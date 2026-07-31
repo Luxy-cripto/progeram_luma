@@ -25,7 +25,8 @@ const KEYWORDS = {
     this: TokenType.THIS,
     "class": TokenType.CLASS,
     "super": TokenType.SUPER,
-    "static": TokenType.STATIC
+    "static": TokenType.STATIC,
+    import: TokenType.IMPORT
 };
 
 export class Lexer {
@@ -67,15 +68,67 @@ export class Lexer {
     }
     
     string() {
+
         let value = "";
-        while (!this.isAtEnd() && this.peek() !== '"') {
-            value += this.advance();
+
+        while (
+            !this.isAtEnd() &&
+            this.peek() !== '"'
+        ) {
+
+            let char =
+                this.advance();
+
+            if (
+                char === "\\" &&
+                !this.isAtEnd()
+            ) {
+
+                const next =
+                    this.advance();
+
+                switch (next) {
+
+                    case "n":
+                        value += "\n";
+                        break;
+
+                    case "t":
+                        value += "\t";
+                        break;
+
+                    case '"':
+                        value += '"';
+                        break;
+
+                    case "\\":
+                        value += "\\";
+                        break;
+
+                    default:
+                        value +=
+                            "\\" + next;
+                }
+
+            } else {
+
+                value += char;
+            }
         }
+
         if (this.isAtEnd()) {
-            throw new Error("Unterminated string.");
+
+            throw new Error(
+                "Unterminated string."
+            );
         }
-        this.advance(); // Consume the closing quote
-        this.addToken(TokenType.STRING, value);
+
+        this.advance();
+
+        this.addToken(
+            TokenType.STRING,
+            value
+        );
     }
     
     identifier(firstChar) {

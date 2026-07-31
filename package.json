@@ -1,8 +1,8 @@
 {
-    "name": "luma",
-    "version": "0.1.0",
-    "type": "module",
-    "dependencies": {
-        "readline-sync": "^1.4.10"
-    }
+  "name": "luma",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "luma": "./src/main.js"
+  }
 }
