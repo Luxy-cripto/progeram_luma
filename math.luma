@@ -1,3 +1,5 @@
-fun add(a, b) {
-    return a + b;
+export let PI = 3.14;
+
+export fun square(x) {
+    return x * x;
 }

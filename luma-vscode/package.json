@@ -1,0 +1,37 @@
+{
+  "name": "luma-language",
+  "displayName": "Luma Language Support",
+  "description": "Syntax highlighting for Luma Programming Language",
+  "version": "0.1.0",
+  "publisher": "luxy",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "activationEvents": [
+  "onLanguage:luma"
+],
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "luma",
+        "aliases": [
+          "Luma",
+          "luma"
+        ],
+        "extensions": [
+          ".luma"
+        ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "luma",
+        "scopeName": "source.luma",
+        "path": "./syntaxes/luma.tmLanguage.json"
+      }
+    ]
+  }
+}

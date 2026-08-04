@@ -66,6 +66,7 @@ export class LumaFunction {
                 this.declaration.params[i],
                 args[i]
             );
+
         }
 
         interpreter.environment =

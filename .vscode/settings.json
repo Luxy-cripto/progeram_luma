@@ -1,0 +1,11 @@
+{
+  "contributes": {
+    "languages": [
+      {
+        "id": "luma",
+        "aliases": ["Luma"],
+        "extensions": [".luma"]
+      }
+    ]
+  }
+}

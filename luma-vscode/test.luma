@@ -1,0 +1,7 @@
+let name = "wandi";
+
+say name;
+
+if true {
+
+}

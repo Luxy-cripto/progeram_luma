@@ -29,6 +29,13 @@ import { ClassDeclaration } from "../ast/ClassDeclaration.js";
 import { SuperExpression } from "../ast/SuperExpression.js";
 import { LumaError } from "../error/LumaError.js";
 import { ImportStatement } from "../ast/ImportStatement.js";
+import { TryStatement } from "../ast/TryStatement.js";
+import { ThrowStatement } from "../ast/ThrowStatement.js";
+import { LambdaExpression } from "../ast/LambdaExpression.js";
+import { SwitchStatement } from "../ast/SwitchStatement.js";
+import { ExportStatement } from "../ast/ExportStatement.js";
+import { ConstDeclaration } from "../ast/ConstDeclaration.js";
+
 
 
 export class Parser {
@@ -122,6 +129,23 @@ export class Parser {
 
     importStatement() {
 
+        let alias = null;
+
+        if (
+            this.check(
+                TokenType.IDENTIFIER
+            )
+        ) {
+
+            alias =
+                this.advance().value;
+
+            this.consume(
+                TokenType.FROM,
+                "Expected 'from'."
+            );
+        }
+
         const path =
             this.consume(
                 TokenType.STRING,
@@ -134,10 +158,214 @@ export class Parser {
         );
 
         return new ImportStatement(
-            path.value
+            path.value,
+            alias
         );
     }
 
+    constDeclaration() {
+
+        const name =
+            this.consume(
+                TokenType.IDENTIFIER,
+                "Expected constant name."
+            );
+
+        this.consume(
+            TokenType.EQUAL,
+            "Expected '='."
+        );
+
+        const initializer =
+            this.expression();
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
+
+        return new ConstDeclaration(
+            name.value,
+            initializer
+        );
+    }
+
+    tryStatement() {
+
+        const tryBlock =
+            this.block();
+
+        this.consume(
+            TokenType.CATCH,
+            "Expected catch."
+        );
+
+        const errorName =
+            this.consume(
+                TokenType.IDENTIFIER,
+                "Expected error variable."
+            );
+
+        const catchBlock =
+            this.block();
+
+        return new TryStatement(
+            tryBlock,
+            errorName.value,
+            catchBlock
+        );
+    }
+
+    throwStatement() {
+
+        const value =
+            this.expression();
+
+        this.consume(
+            TokenType.SEMICOLON,
+            "Expected ';'."
+        );
+
+        return new ThrowStatement(
+            value
+        );
+    }
+
+    lambdaExpression() {
+
+
+
+        const params = [];
+
+        this.consume(
+            TokenType.LEFT_PAREN,
+            "Expected '('"
+        );
+
+        if (
+            !this.check(
+                TokenType.RIGHT_PAREN
+            )
+        ) {
+
+            do {
+
+                params.push(
+                    this.consume(
+                        TokenType.IDENTIFIER,
+                        "Expected parameter."
+                    ).value
+                );
+
+            } while (
+                this.match(
+                    TokenType.COMMA
+                )
+            );
+        }
+
+        this.consume(
+            TokenType.RIGHT_PAREN,
+            "Expected ')'."
+        );
+
+        this.consume(
+            TokenType.ARROW,
+            "Expected =>."
+        );
+
+        let body;
+
+        if (
+            this.check(
+                TokenType.LEFT_BRACE
+            )
+        ) {
+
+            body =
+                this.block();
+
+        } else {
+
+            body =
+                this.expression();
+        }
+
+        return new LambdaExpression(
+            params,
+            body
+        );
+    }
+
+    exportStatement() {
+
+        const declaration =
+            this.statement();
+
+        return new ExportStatement(
+            declaration
+        );
+    }
+
+    switchStatement() {
+
+        const expression =
+            this.expression();
+
+        this.consume(
+            TokenType.LEFT_BRACE,
+            "Expected '{'."
+        );
+
+        const cases = [];
+        let defaultCase = null;
+
+        while (
+            !this.check(TokenType.RIGHT_BRACE) &&
+            !this.isAtEnd()
+        ) {
+
+            if (
+                this.match(TokenType.CASE)
+            ) {
+
+                const value =
+                    this.expression();
+
+                const body =
+                    this.block();
+
+                cases.push({
+                    value,
+                    body
+                });
+
+            } else if (
+                this.match(TokenType.DEFAULT)
+            ) {
+
+                defaultCase =
+                    this.block();
+
+            } else {
+
+                throw new Error(
+                    "Expected case or default."
+                );
+            }
+        }
+
+        this.consume(
+            TokenType.RIGHT_BRACE,
+            "Expected '}'."
+        );
+
+        return new SwitchStatement(
+            expression,
+            cases,
+            defaultCase
+        );
+    }
 
     classDeclaration() {
 
@@ -489,6 +717,10 @@ export class Parser {
             return this.variableDeclaration();
         }
 
+        if (this.match(TokenType.CONST)) {
+            return this.constDeclaration();
+        }
+
         if (this.match(TokenType.FUN)) {
             return this.functionDeclaration();
         }
@@ -499,6 +731,10 @@ export class Parser {
 
         if (this.match(TokenType.IF)) {
             return this.ifStatement();
+        }
+
+        if (this.match(TokenType.SWITCH)) {
+            return this.switchStatement();
         }
 
         if (this.match(TokenType.WHILE)) {
@@ -534,6 +770,18 @@ export class Parser {
 
         if (this.check(TokenType.LEFT_BRACE)) {
             return this.block();
+        }
+
+        if (this.match(TokenType.TRY)) {
+            return this.tryStatement();
+        }
+
+        if (this.match(TokenType.THROW)) {
+            return this.throwStatement();
+        }
+
+        if (this.match(TokenType.EXPORT)) {
+            return this.exportStatement();
         }
 
        return this.expressionStatement();
@@ -690,46 +938,67 @@ export class Parser {
     
     assignment() {
 
-        const expr = this.equality();
 
-        if (this.match(TokenType.EQUAL)) {
+            if (
+                this.check(TokenType.LEFT_PAREN)
+            ) {
 
-            const value =
-                this.assignment();
+                const start =
+                    this.current;
 
-            if (expr instanceof Identifier) {
+                try {
 
-                return new Assignment(
-                    expr.name,
-                    value
+                    return this.lambdaExpression();
+
+                } catch (_) {
+
+                    this.current =
+                        start;
+                }
+            }
+
+            const expr =
+                this.equality();
+
+            if (this.match(TokenType.EQUAL)) {
+
+                const value =
+                    this.assignment();
+
+                if (expr instanceof Identifier) {
+
+                    return new Assignment(
+                        expr.name,
+                        value
+                    );
+                }
+
+                if (expr instanceof PropertyAccess) {
+
+                    return new PropertyAssignment(
+                        expr.object,
+                        expr.property,
+                        value
+                    );
+                }
+
+                if (expr instanceof IndexExpression) {
+
+                    return new ArrayAssignment(
+                        expr.array,
+                        expr.index,
+                        value
+                    );
+                }
+
+                throw new Error(
+                    "Invalid assignment target."
                 );
             }
 
-            if (expr instanceof PropertyAccess) {
-
-                return new PropertyAssignment(
-                    expr.object,
-                    expr.property,
-                    value
-                );
-            }
-
-            if (expr instanceof IndexExpression) {
-
-                return new ArrayAssignment(
-                    expr.array,
-                    expr.index,
-                    value
-                );
-            }
-
-            throw new Error(
-                "Invalid assignment target."
-            );
+            return expr;
         }
-
-        return expr;
-    }
+        
     equality() {
         let expr = this.comparison();
 
@@ -836,7 +1105,13 @@ export class Parser {
                 
 
         if (this.match(TokenType.IDENTIFIER)) {
-            return new Identifier(this.previous().value);
+            const token = this.previous();
+
+                return new Identifier(
+                    token.value,
+                    token.line,
+                    token.column
+                );
         }
 
         if (this.match(TokenType.LEFT_PAREN)) {

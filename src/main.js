@@ -8,6 +8,11 @@ import { Parser } from "./parser/Parser.js";
 import { Interpreter } from "./interpreter/Interpreter.js";
 import { Resolver } from "./resolver/Resolver.js";
 
+const cyan = "\x1b[36m";
+const yellow = "\x1b[33m";
+const green = "\x1b[32m";
+const reset = "\x1b[0m";
+
 function run(source, interpreter) {
 
     const lexer =
@@ -55,6 +60,8 @@ if (file) {
             interpreter
         );
 
+        process.exit(0);
+
     } catch (error) {
 
         console.error(
@@ -71,7 +78,20 @@ if (file) {
 } else {
 
     console.log(
-        "Luma REPL v0.4"
+        cyan +
+`
+██╗     ██╗   ██╗███╗   ███╗ █████╗
+██║     ██║   ██║████╗ ████║██╔══██╗
+██║     ██║   ██║██╔████╔██║███████║
+██║     ██║   ██║██║╚██╔╝██║██╔══██║
+███████╗╚██████╔╝██║ ╚═╝ ██║██║  ██║
+`
+        + reset +
+        yellow +
+`
+Luma Programming Language v0.5.0
+`
+        + reset
     );
 
     const rl =
@@ -86,7 +106,7 @@ if (file) {
     function prompt() {
 
         rl.question(
-            "> ",
+            green + "luma> " + reset,
             line => {
 
                 try {

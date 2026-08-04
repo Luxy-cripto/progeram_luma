@@ -5,6 +5,7 @@ import { Token } from "../token/Token.js";
 const KEYWORDS = {
     say: TokenType.SAY,
     let: TokenType.LET,
+    const: TokenType.CONST,
     var: TokenType.VAR,
 
     true: TokenType.TRUE,
@@ -26,7 +27,15 @@ const KEYWORDS = {
     "class": TokenType.CLASS,
     "super": TokenType.SUPER,
     "static": TokenType.STATIC,
-    import: TokenType.IMPORT
+    import: TokenType.IMPORT,
+    try: TokenType.TRY,
+    catch: TokenType.CATCH,
+    throw: TokenType.THROW,
+    switch: TokenType.SWITCH,
+    case: TokenType.CASE,
+    export: TokenType.EXPORT,
+    from: TokenType.FROM,
+    default: TokenType.DEFAULT
 };
 
 export class Lexer {
@@ -268,12 +277,29 @@ export class Lexer {
             case ",":
                 this.addToken(TokenType.COMMA);
                 break;
-            case "=":
-            if (this.match('=')){
-                this.addToken(TokenType.EQUAL_EQUAL);
+           case "=":
+
+            if (this.match(">")) {
+
+                this.addToken(
+                    TokenType.ARROW
+                );
+
+            } else if (
+                this.match("=")
+            ) {
+
+                this.addToken(
+                    TokenType.EQUAL_EQUAL
+                );
+
             } else {
-                this.addToken(TokenType.EQUAL);
+
+                this.addToken(
+                    TokenType.EQUAL
+                );
             }
+
             break;
             case "!":
             if (this.match('=')){
@@ -328,7 +354,8 @@ export class Lexer {
             case ";":
                 this.addToken("SEMICOLON");
              break;
-
+            
+            
 
             default:
             throw new Error(`Unexpected character: ${char}`)

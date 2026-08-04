@@ -95,6 +95,14 @@ export class Resolver {
 
         switch (stmt.constructor.name) {
 
+            case "ExportStatement":
+
+                this.resolveStatement(
+                    stmt.declaration
+                );
+
+            return;
+
             case "BlockStatement":
 
                 this.beginScope();

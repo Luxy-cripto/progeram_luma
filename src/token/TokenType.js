@@ -1,6 +1,7 @@
 export const TokenType = {
     // Single-character tokens.
     LET: "LET",
+    CONST: "CONST",
     SAY: "SAY",
     IF: "IF",
     ELSE: "ELSE",
@@ -19,6 +20,14 @@ export const TokenType = {
     STATIC: "STATIC",
     VAR: "VAR",
     IMPORT: "IMPORT",
+    TRY: "TRY",
+    CATCH: "CATCH",
+    THROW: "THROW",
+    SWITCH: "SWITCH",
+    CASE: "CASE",
+    DEFAULT: "DEFAULT",
+    EXPORT: "EXPORT",
+    FROM: "FROM",
 
 
     // Literals.
@@ -42,6 +51,7 @@ export const TokenType = {
     DOT: "DOT",
     COLON: "COLON",
     SEMICOLON: "SEMICOLON",
+    ARROW: "ARROW",
     
 
     // SYMBOLS

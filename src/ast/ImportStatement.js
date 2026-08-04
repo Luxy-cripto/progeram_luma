@@ -1,7 +1,11 @@
 export class ImportStatement {
 
-    constructor(path) {
+    constructor(
+        path,
+        alias = null
+    ) {
 
         this.path = path;
+        this.alias = alias;
     }
 }

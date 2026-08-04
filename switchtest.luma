@@ -1,0 +1,15 @@
+switch 2 {
+
+    case 1 {
+        say "one";
+    }
+
+    case 2 {
+        say "two";
+    }
+
+    case 3 {
+        say "three";
+    }
+
+}

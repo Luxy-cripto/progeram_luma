@@ -1,8 +1,5 @@
-let text =
-    "{\"name\":\"Luxy\",\"age\":17}";
+const PI = 3.14;
 
-let user =
-    jsonParse(text);
+say PI;
 
-say user.name;
-say user.age;
+PI = 5;

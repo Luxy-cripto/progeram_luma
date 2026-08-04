@@ -1,0 +1,17 @@
+{
+  "scopeName": "source.luma",
+  "patterns": [
+    {
+      "match": "\\b(let|fun|say|if|else|while|for|class|return|import|export|try|catch|throw)\\b",
+      "name": "keyword.control.luma"
+    },
+    {
+      "match": "\".*?\"",
+      "name": "string.quoted.double.luma"
+    },
+    {
+      "match": "\\b[0-9]+\\b",
+      "name": "constant.numeric.luma"
+    }
+  ]
+}

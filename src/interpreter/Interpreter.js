@@ -37,6 +37,13 @@ import { ClassDeclaration } from "../ast/ClassDeclaration.js";
 import { SetProperty } from "../ast/SetProperty.js";
 import { SuperExpression } from "../ast/SuperExpression.js";
 import { ImportStatement } from "../ast/ImportStatement.js";
+import { TryStatement } from "../ast/TryStatement.js";
+import { ThrowStatement } from "../ast/ThrowStatement.js";
+import { LambdaExpression } from "../ast/LambdaExpression.js";
+import { SwitchStatement } from "../ast/SwitchStatement.js";
+import { ExportStatement } from "../ast/ExportStatement.js";
+import { ConstDeclaration } from "../ast/ConstDeclaration.js";
+
 
 import fs from "fs";
 import { Lexer } from "../lexer/Lexer.js";
@@ -46,7 +53,14 @@ import { Resolver } from "../resolver/Resolver.js";
 
 export class Interpreter {
 
-    constructor() {
+    constructor(parent = null) {
+
+        this.parent = parent;
+        this.value  = {};
+        this.constants = new Set(); 
+
+        this.exports = {};
+
 
         this.globals =
             new Environment();
@@ -477,6 +491,75 @@ export class Interpreter {
 
             })
         );
+
+        this.environment.define(
+            "read",
+            new NativeFunction(args => {
+
+                return fs.readFileSync(
+                    args[0],
+                    "utf8"
+                );
+
+            })
+        );
+
+        this.environment.define(
+            "green",
+            new NativeFunction(args => {
+
+                return (
+                    "\x1b[32m" +
+                    args[0] +
+                    "\x1b[0m"
+                );
+            })
+        );
+
+        this.environment.define(
+            "red",
+            new NativeFunction(args => {
+
+                return (
+                    "\x1b[31m" +
+                    args[0] +
+                    "\x1b[0m"
+                );
+            })
+        );
+
+        this.environment.define(
+            "yellow",
+            new NativeFunction(args => {
+
+                return (
+                    "\x1b[33m" +
+                    args[0] +
+                    "\x1b[0m"
+                );
+            })
+        );
+
+        this.environment.define(
+            "blue",
+            new NativeFunction(args => {
+
+                return (
+                    "\x1b[34m" +
+                    args[0] +
+                    "\x1b[0m"
+                );
+            })
+        );
+
+        
+    }
+
+    defineConst(name, value) {
+
+        this.values[name] = value;
+
+        this.constants.add(name);
     }
 
     resolve(expr, depth) {
@@ -499,7 +582,7 @@ export class Interpreter {
             );
         }
 
-        return this.globals.get(name);
+        return this.globals.get(name, expr);
     }
 
  
@@ -647,10 +730,65 @@ export class Interpreter {
 
     execute(statement) {
 
-        if (statement instanceof VariableDeclaration) {
+        if ( statement instanceof ExportStatement
+        ) {
+
+            const declaration =
+                statement.declaration;
+
+            this.execute(
+                declaration
+            );
+
+            if (
+                declaration instanceof VariableDeclaration
+            ) {
+
+                this.exports[
+                    declaration.identifier
+                ] =
+                this.environment.get(
+                    declaration.identifier
+                );
+            }
+
+            if (
+                declaration instanceof FunctionDeclaration
+            ) {
+
+                this.exports[
+                    declaration.name
+                ] =
+                this.environment.get(
+                    declaration.name
+                );
+            }
+
+            return;
+        }
+
+        if (statement instanceof ConstDeclaration) {
 
             const value =
-                this.evaluate(statement.initializer);
+                this.evaluate(
+                    statement.initializer
+                );
+
+            this.environment.defineConst(
+                statement.name,
+                value
+            );
+
+            return;
+        }
+
+        if (statement instanceof VariableDeclaration) {
+
+
+            const value =
+                this.evaluate(
+                    statement.initializer
+                );
 
             this.environment.define(
                 statement.identifier,
@@ -869,15 +1007,31 @@ export class Interpreter {
             return;
         }
 
-        if (
-            statement instanceof ImportStatement
-        ) {
+        if (statement instanceof ImportStatement) {
 
-            const source =
-                fs.readFileSync(
-                    statement.path,
-                    "utf8"
-                );
+            let source;
+
+            try {
+
+                source =
+                    fs.readFileSync(
+                        statement.path,
+                        "utf8"
+                    );
+
+            } catch (error) {
+
+                if (
+                    error.code === "ENOENT"
+                ) {
+
+                    throw new Error(
+                        `Module '${statement.path}' not found.`
+                    );
+                }
+
+                throw error;
+            }
 
             const lexer =
                 new Lexer(source);
@@ -902,8 +1056,37 @@ export class Interpreter {
                 statements
             );
 
+            if (statement.alias) {
+
+                const namespace = {
+
+                    ...this.exports
+                };
+
+                this.environment.define(
+                    statement.alias,
+                    namespace
+                );
+
+            } else {
+
+                for (
+                    const [name, value]
+                    of Object.entries(
+                        this.exports
+                    )
+                ) {
+
+                    this.environment.define(
+                        name,
+                        value
+                    );
+                }
+            }
+
             return;
         }
+
 
 
         if (statement instanceof BlockStatement) {
@@ -930,6 +1113,82 @@ export class Interpreter {
 
                 this.environment =
                     previous;
+            }
+
+            return;
+        }
+
+        if (statement instanceof TryStatement) {
+
+            try {
+
+                this.execute(
+                    statement.tryBlock
+                );
+
+            } catch (error) {
+
+                this.environment.define(
+                    statement.errorName,
+                    error.message
+                );
+
+                this.execute(
+                    statement.catchBlock
+                );
+            }
+
+            return;
+        }
+
+        if (statement instanceof ThrowStatement) {
+
+            const value =
+                this.evaluate(
+                    statement.value
+                );
+
+            throw new Error(
+                String(value)
+            );
+        }
+
+        if (
+    statement instanceof SwitchStatement
+        ) {
+
+            const target =
+                this.evaluate(
+                    statement.expression
+                );
+
+            for (
+                const caseItem
+                of statement.cases
+            ) {
+
+                const value =
+                    this.evaluate(
+                        caseItem.value
+                    );
+
+                if (target === value) {
+
+                    this.execute(
+                        caseItem.body
+                    );
+
+                    return;
+                }
+            }
+
+            if (
+                statement.defaultCase
+            ) {
+
+                this.execute(
+                    statement.defaultCase
+                );
             }
 
             return;
@@ -1204,13 +1463,20 @@ export class Interpreter {
             }
 
             if (
-                typeof object === "object" &&
-                object !== null
+                object &&
+                typeof object === "object"
             ) {
 
-                return object[
-                    expr.property
-                ];
+                if (expr.property in object) {
+
+                    return object[
+                        expr.property
+                    ];
+                }
+
+                throw new Error(
+                    `Property '${expr.property}' not found.`
+                );
             }
 
             throw new Error(
@@ -1218,8 +1484,41 @@ export class Interpreter {
             );
         }
 
-        
+        if (expr instanceof LambdaExpression) {
 
+
+                let body;
+
+                if (
+                    expr.body &&
+                    expr.body.statements
+                ) {
+
+                    body = expr.body;
+
+                } else {
+
+                    body = {
+                        statements: [
+                            new ReturnStatement(
+                                expr.body
+                            )
+                        ]
+                    };
+                }
+
+                const declaration = {
+                    params: expr.params,
+                    body
+                };
+
+                return new LumaFunction(
+                    declaration,
+                    this.environment
+                );
+            }
+
+        
         if (expr instanceof UnaryExpression) {
 
             const right =

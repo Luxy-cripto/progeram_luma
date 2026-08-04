@@ -1,22 +1,40 @@
 export class Environment {
 
     constructor(parent = null) {
+
         this.parent = parent;
+
         this.values = {};
+
+        this.constants =
+            new Set();
     }
 
     define(name, value) {
         this.values[name] = value;
     }
 
-    get(name) {
+    defineConst(name, value) {
+        this.define(name, value);
+        this.constants.add(name);
+    }
+
+    get(name, expr = null) {
 
         if (name in this.values) {
             return this.values[name];
         }
 
         if (this.parent) {
-            return this.parent.get(name);
+            return this.parent.get(name, expr);
+        }
+
+        if (expr) {
+
+        throw new Error(
+                `[Line ${expr.line}, Column ${expr.column}] ` +
+                `Variable '${name}' not defined.`
+            );
         }
 
         throw new Error(
@@ -24,16 +42,34 @@ export class Environment {
         );
     }
 
-    assign(name, value) {
+    assign(name, value, expr = null) {
 
         if (name in this.values) {
+
+            if (
+                this.constants.has(name)
+            ) {
+
+                throw new Error(
+                    `Cannot assign to constant '${name}'.`
+                );
+            }
+
             this.values[name] = value;
             return;
         }
 
         if (this.parent) {
-            this.parent.assign(name, value);
+            this.parent.assign(name, value, expr);
             return;
+        }
+
+       if (expr) {
+
+        throw new Error(
+                `[Line ${expr.line}, Column ${expr.column}] ` +
+                `Variable '${name}' not defined.`
+            );
         }
 
         throw new Error(
