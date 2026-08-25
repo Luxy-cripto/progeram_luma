@@ -1075,6 +1075,10 @@ export class Parser {
             return new Literal(false);
         }
 
+        if (this.match(TokenType.NULL)) {
+            return new Literal(null);
+        }
+
         if (this.match(TokenType.NUMBER, TokenType.STRING)) {
             return new Literal(this.previous().value);
         }

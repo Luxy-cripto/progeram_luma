@@ -1,5 +1,6 @@
-const PI = 3.14;
-
-say PI;
-
-PI = 5;
+try {
+    throw "Boom!";
+} catch error {
+    say error.message;
+    say error.type;
+}

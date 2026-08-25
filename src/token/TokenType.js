@@ -42,6 +42,7 @@ export const TokenType = {
     RIGHT_PAREN: "RIGHT_PAREN",
     TRUE: "TRUE",
     FALSE: "FALSE",
+    NULL: "NULL",
     LEFT_BRACE: "LEFT_BRACE",
     RIGHT_BRACE: "RIGHT_BRACE",
     COMMA: "COMMA",

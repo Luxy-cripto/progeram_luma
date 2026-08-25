@@ -33,6 +33,7 @@ import { FunctionExpression } from "../ast/FunctionExpression.js";
 import { ThisExpression } from "../ast/ThisExpression.js";
 import { LumaClass } from "../runtime/LumaClass.js";
 import { LumaInstance } from "../runtime/LumaInstance.js";
+import { LumaError } from "../runtime/LumaError.js";
 import { ClassDeclaration } from "../ast/ClassDeclaration.js";
 import { SetProperty } from "../ast/SetProperty.js";
 import { SuperExpression } from "../ast/SuperExpression.js";
@@ -43,6 +44,14 @@ import { LambdaExpression } from "../ast/LambdaExpression.js";
 import { SwitchStatement } from "../ast/SwitchStatement.js";
 import { ExportStatement } from "../ast/ExportStatement.js";
 import { ConstDeclaration } from "../ast/ConstDeclaration.js";
+import { registerStringLibrary } from "../stdlib/StringLibrary.js";
+import { registerMathLibrary } from "../stdlib/MathLibrary.js";
+import { registerArrayLibrary } from "../stdlib/ArrayLibrary.js";
+import { registerFileLibrary } from "../stdlib/FileLibrary.js";
+import { registerJsonLibrary } from "../stdlib/JsonLibrary.js";
+import { registerTypeLibrary } from "../stdlib/TypeLibrary.js";
+import { registerAssertionLibrary } from "../stdlib/AssertionLibrary.js";
+import {createMathNamespace,createStringNamespace,createJsonNamespace,createFileNamespace} from "../stdlib/Namespace.js";
 
 
 import fs from "fs";
@@ -56,7 +65,7 @@ export class Interpreter {
     constructor(parent = null) {
 
         this.parent = parent;
-        this.value  = {};
+        this.values  = {};
         this.constants = new Set(); 
 
         this.exports = {};
@@ -71,6 +80,49 @@ export class Interpreter {
         this.locals =
             new Map();
 
+        registerStringLibrary(this.environment);
+        registerMathLibrary(this.environment);
+        registerArrayLibrary(this.environment);
+        registerFileLibrary(this.environment);
+        registerJsonLibrary(this.environment);
+        registerAssertionLibrary(this.environment);
+        registerTypeLibrary(this.environment);
+        
+
+        // this.environment.define(
+        //     "math",
+        //     {
+        //         sqrt: this.environment.get("sqrt"),
+        //         pow: this.environment.get("pow"),
+        //         abs: this.environment.get("abs"),
+        //         floor: this.environment.get("floor"),
+        //         ceil: this.environment.get("ceil"),
+        //         round: this.environment.get("round"),
+        //         min: this.environment.get("min"),
+        //         max: this.environment.get("max"),
+        //         random: this.environment.get("random")
+        //     }
+        // );
+
+        this.environment.define(
+            "math",
+            createMathNamespace()
+        );
+
+        this.environment.define(
+            "string",
+            createStringNamespace()
+        );
+
+        this.environment.define(
+            "json",
+            createJsonNamespace()
+        );
+        this.environment.define(
+            "file",
+            createFileNamespace()
+        );
+
         this.environment.define(
             "len",
             new NativeFunction(args => {
@@ -78,24 +130,7 @@ export class Interpreter {
             })
         );
 
-        this.environment.define(
-            "upper",
-            new NativeFunction(args => {
-                return String(args[0]).toUpperCase();
-            })
-        );
-
-
-        this.environment.define(
-            "trim",
-            new NativeFunction(args => {
-
-                return String(
-                    args[0]
-                ).trim();
-
-            })
-        );
+        
 
         this.environment.define(
             "type",
@@ -119,133 +154,6 @@ export class Interpreter {
 
             })
         );
-        this.environment.define(
-            "random",
-            new NativeFunction(args => {
-
-                return Math.random();
-
-            })
-        );
-
-        this.environment.define(
-            "sqrt",
-            new NativeFunction(args => {
-
-                return Math.sqrt(args[0]);
-
-            })
-        );
-
-        this.environment.define(
-            "pow",
-            new NativeFunction(args => {
-
-                return Math.pow(
-                    args[0],
-                    args[1]
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "floor",
-            new NativeFunction(args => {
-
-                return Math.floor(args[0]);
-
-            })
-        );
-
-        this.environment.define(
-            "ceil",
-            new NativeFunction(args => {
-
-                return Math.ceil(args[0]);
-
-            })
-        );
-
-        this.environment.define(
-            "abs",
-            new NativeFunction(args => {
-
-                return Math.abs(args[0]);
-
-            })
-        );
-
-        this.environment.define(
-            "round",
-            new NativeFunction(args => {
-
-                return Math.round(
-                    args[0]
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "min",
-            new NativeFunction(args => {
-
-                return Math.min(
-                    ...args
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "max",
-            new NativeFunction(args => {
-
-                return Math.max(
-                    ...args
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "lower",
-            new NativeFunction(args => {
-
-                return String(
-                    args[0]
-                ).toLowerCase();
-
-            })
-        );
-
-        this.environment.define(
-            "contains",
-            new NativeFunction(args => {
-
-                return String(
-                    args[0]
-                ).includes(
-                    String(args[1])
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "replace",
-            new NativeFunction(args => {
-
-                return String(
-                    args[0]
-                ).replace(
-                    String(args[1]),
-                    String(args[2])
-                );
-
-            })
-        );
 
         this.environment.define(
             "write",
@@ -262,18 +170,6 @@ export class Interpreter {
         );
 
         this.environment.define(
-            "read",
-            new NativeFunction(args => {
-
-                return fs.readFileSync(
-                    args[0],
-                    "utf8"
-                );
-
-            })
-        );
-
-        this.environment.define(
             "append",
             new NativeFunction(args => {
 
@@ -284,34 +180,6 @@ export class Interpreter {
 
                 return null;
 
-            })
-        );
-
-        this.environment.define(
-            "sqrt",
-            new NativeFunction(args => {
-                return Math.sqrt(args[0]);
-            })
-        );
-
-        this.environment.define(
-            "floor",
-            new NativeFunction(args => {
-                return Math.floor(args[0]);
-            })
-        );
-
-        this.environment.define(
-            "ceil",
-            new NativeFunction(args => {
-                return Math.ceil(args[0]);
-            })
-        );
-
-        this.environment.define(
-            "abs",
-            new NativeFunction(args => {
-                return Math.abs(args[0]);
             })
         );
 
@@ -373,40 +241,6 @@ export class Interpreter {
                 return Object.prototype.hasOwnProperty.call(
                     args[0],
                     args[1]
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "split",
-            new NativeFunction(args => {
-
-                return String(args[0]).split(
-                    args[1]
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "join",
-            new NativeFunction(args => {
-
-                return args[0].join(
-                    args[1]
-                );
-
-            })
-        );
-
-        this.environment.define(
-            "replace",
-            new NativeFunction(args => {
-
-                return String(args[0]).replace(
-                    args[1],
-                    args[2]
                 );
 
             })
@@ -1130,7 +964,7 @@ export class Interpreter {
 
                 this.environment.define(
                     statement.errorName,
-                    error.message
+                    error
                 );
 
                 this.execute(
@@ -1148,14 +982,13 @@ export class Interpreter {
                     statement.value
                 );
 
-            throw new Error(
-                String(value)
+            throw new LumaError(
+                String(value),
+                "Error"
             );
         }
 
-        if (
-    statement instanceof SwitchStatement
-        ) {
+        if (statement instanceof SwitchStatement) {
 
             const target =
                 this.evaluate(

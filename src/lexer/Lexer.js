@@ -10,6 +10,7 @@ const KEYWORDS = {
 
     true: TokenType.TRUE,
     false: TokenType.FALSE,
+    null: TokenType.NULL,
 
     if: TokenType.IF,
     else: TokenType.ELSE,
