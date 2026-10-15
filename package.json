@@ -4,5 +4,8 @@
   "type": "module",
   "bin": {
     "luma": "./src/main.js"
+  },
+  "scripts": {
+    "test": "node --test"
   }
 }

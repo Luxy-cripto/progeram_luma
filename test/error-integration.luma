@@ -1,0 +1,6 @@
+try {
+    throw TypeError("Tipe tidak sesuai");
+} catch error {
+    say error.message;
+    say error.type;
+}

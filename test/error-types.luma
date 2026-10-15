@@ -1,0 +1,13 @@
+try {
+    throw ValueError("Nilai tidak valid");
+} catch error {
+    say error.message;
+    say error.type;
+}
+
+try {
+    throw Error("Kesalahan umum");
+} catch error {
+    say error.message;
+    say error.type;
+}

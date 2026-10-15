@@ -1,0 +1,8 @@
+write("test-file-library.txt", "Baris pertama\n");
+append("test-file-library.txt", "Baris kedua\n");
+
+say read("test-file-library.txt");
+say exists("test-file-library.txt");
+
+delete("test-file-library.txt");
+say exists("test-file-library.txt");
