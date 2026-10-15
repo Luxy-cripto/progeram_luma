@@ -1,6 +1,1 @@
-try {
-    throw "Boom!";
-} catch error {
-    say error.message;
-    say error.type;
-}
+say "Hello Luma";

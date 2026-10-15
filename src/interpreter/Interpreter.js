@@ -51,6 +51,7 @@ import { registerFileLibrary } from "../stdlib/FileLibrary.js";
 import { registerJsonLibrary } from "../stdlib/JsonLibrary.js";
 import { registerTypeLibrary } from "../stdlib/TypeLibrary.js";
 import { registerAssertionLibrary } from "../stdlib/AssertionLibrary.js";
+import {registerErrorLibrary} from "../stdlib/ErrorLibrary.js";
 import {createMathNamespace,createStringNamespace,createJsonNamespace,createFileNamespace} from "../stdlib/Namespace.js";
 
 
@@ -87,6 +88,7 @@ export class Interpreter {
         registerJsonLibrary(this.environment);
         registerAssertionLibrary(this.environment);
         registerTypeLibrary(this.environment);
+        registerErrorLibrary(this.environment);
         
 
         // this.environment.define(
@@ -326,17 +328,6 @@ export class Interpreter {
             })
         );
 
-        this.environment.define(
-            "read",
-            new NativeFunction(args => {
-
-                return fs.readFileSync(
-                    args[0],
-                    "utf8"
-                );
-
-            })
-        );
 
         this.environment.define(
             "green",
@@ -981,6 +972,12 @@ export class Interpreter {
                 this.evaluate(
                     statement.value
                 );
+
+            if (value instanceof LumaError) {
+
+                throw value;
+
+            }
 
             throw new LumaError(
                 String(value),
